@@ -1,0 +1,55 @@
+-- my-tohyo DB用テーブル定義
+
+CREATE TABLE user (
+  user_id SERIAL PRIMARY KEY,
+  name VARCHAR(100),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  region VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE SOCIAL_ACCOUNT (
+  social_account_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  provider VARCHAR(50) NOT NULL,
+  account_identifier VARCHAR(100) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE ELECTION_TYPE (
+  election_type_id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE ELECTION (
+  election_id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  date DATE NOT NULL,
+  election_type_id INTEGER NOT NULL,
+  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE CASCADE
+);
+
+CREATE TABLE PARTY (
+  party_id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE CANDIDATE (
+  candidate_id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  party_id INTEGER NOT NULL,
+  manifesto_url VARCHAR(255),
+  achievements TEXT,
+  FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
+);
+
+CREATE TABLE VOTE_RECORD (
+  vote_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  election_id INTEGER NOT NULL,
+  candidate_id INTEGER NOT NULL,
+  vote_date DATE NOT NULL,
+  photo_url VARCHAR(255),
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (election_id) REFERENCES ELECTION(election_id) ON DELETE CASCADE,
+  FOREIGN KEY (candidate_id) REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE
+);

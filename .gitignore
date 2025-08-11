@@ -1,0 +1,65 @@
+# macOS
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# TypeScript
+*.tsbuildinfo
+
+# Next.js
+.next/
+out/
+coverage/
+
+# VSCode
+.vscode/
+.history/
+
+# dotenv
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Test results
+test-results/
+coverage/
+*.lcov
+
+# Build output
+dist/
+build/
+
+# Misc
+*.swp
+*.swo
+
+# Ignore backend/node_modules and src/node_modules if present
+backend/node_modules/
+src/node_modules/
+
+# Ignore backend/.env* but keep .env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Ignore src/.next and src/out
+src/.next/
+src/out/
+
+# Ignore src/test-results
+src/test-results/
+
+# Ignore Playwright test output
+playwright-report/
