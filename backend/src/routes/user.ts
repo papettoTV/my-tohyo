@@ -26,10 +26,14 @@ import jwt from "jsonwebtoken"
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
 
 // Google認証開始
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-)
+router.get("/google", (req, res, next) => {
+  const returnTo = (req.query.returnTo as string) || "/mypage"
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    state: returnTo,
+    session: false,
+  })(req, res, next)
+})
 
 // Google認証コールバック
 router.get(
@@ -58,7 +62,12 @@ router.get(
     }
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" })
     // 認証後、フロントエンドのコールバックページにリダイレクトし、トークンをクエリで渡す
-    res.redirect(`http://localhost:3000/login/callback?token=${token}`)
+    const returnTo = (req.query.state as string) || "/mypage"
+    res.redirect(
+      `http://localhost:3000/login/callback?token=${token}&returnTo=${encodeURIComponent(
+        returnTo
+      )}`
+    )
   }
 )
 

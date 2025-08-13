@@ -45,6 +45,7 @@ passport.use(
           return done(null, socialAccount.user)
         }
 
+        // SocialAccountがなければ、emailでUserを検索
         // Googleプロフィールからemail取得
         const email =
           profile.emails && profile.emails.length > 0
@@ -66,7 +67,8 @@ passport.use(
           await userRepo.save(user)
         }
 
-        // SocialAccount新規作成
+        // Userは存在するがSocialAccountがなかった場合のみSocialAccount新規作成
+        // （既にSocialAccountがあればこの分岐に来ない）
         const newSocialAccount = new SocialAccount()
         newSocialAccount.user = user
         newSocialAccount.user_id = user.user_id

@@ -1,25 +1,24 @@
 "use client"
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const LoginCallback = () => {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    // クエリからトークンを取得
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get("token")
+    const token = searchParams.get("token")
+    const returnTo = searchParams.get("returnTo") || "/mypage"
 
     if (token) {
-      // トークンをlocalStorageに保存（必要に応じてcookie等でもOK）
+      // localStorage と cookie に保存（middleware 用）
       localStorage.setItem("token", token)
-      // 任意のログイン後ページへ遷移
-      router.replace("/mypage")
+      document.cookie = `token=${token}; Path=/; Max-Age=604800; SameSite=Lax`
+      router.replace(returnTo)
     } else {
-      // トークンがない場合はログインページへ
       router.replace("/login")
     }
-  }, [router])
+  }, [router, searchParams])
 
   return <div>ログイン処理中...</div>
 }
