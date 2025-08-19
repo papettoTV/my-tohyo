@@ -54,7 +54,7 @@ export default function MyPage() {
               </Badge>
             </div>
           </div>
-          <Link href="/login">
+          <Link href="/logout">
             <Button variant="outline" size="sm">
               <LogOut className="w-4 h-4 mr-2" />
               ログアウト
