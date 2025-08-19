@@ -4,10 +4,9 @@ import {
   Profile,
   VerifyCallback,
 } from "passport-google-oauth20"
-import { AppDataSource } from "../data-source"
+import { getDataSource } from "../data-source"
 import { User } from "../models/User"
 import { SocialAccount } from "../models/SocialAccount"
-import { v4 as uuidv4 } from "uuid"
 
 passport.use(
   new GoogleStrategy(
@@ -24,10 +23,10 @@ passport.use(
     ) => {
       // GoogleアカウントID（sub）でSocialAccountを検索
       try {
-        await AppDataSource.initialize()
+        const ds = await getDataSource()
 
-        const socialAccountRepo = AppDataSource.getRepository(SocialAccount)
-        const userRepo = AppDataSource.getRepository(User)
+        const socialAccountRepo = ds.getRepository(SocialAccount)
+        const userRepo = ds.getRepository(User)
 
         // provider名
         const provider = "google"

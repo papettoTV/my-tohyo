@@ -1,3 +1,4 @@
+import { cookies } from "next/headers"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { History, LogOut, Plus, Calendar, Vote } from "lucide-react"
 import Link from "next/link"
 
-export default function MyPage() {
+export default async function MyPage() {
   const recentVotes = [
     {
       id: 1,
@@ -36,6 +37,32 @@ export default function MyPage() {
     },
   ]
 
+  const token = (await cookies()).get("token")?.value
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"
+
+  let userName = "ユーザー"
+
+  try {
+    if (token) {
+      const res = await fetch(`${API_BASE}/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      })
+      if (res.ok) {
+        const user = await res.json()
+        userName = user?.name || user?.email || "ユーザー"
+      }
+    }
+  } catch {
+    // 失敗時はデフォルトのまま表示
+  }
+
+  // const avatarText = userName ? userName.slice(0, 2) : "？"
+  const avatarText = userName
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -44,10 +71,12 @@ export default function MyPage() {
           <div className="flex items-center space-x-4">
             <Avatar className="h-16 w-16">
               <AvatarImage src="/placeholder.svg?height=64&width=64" />
-              <AvatarFallback>田中</AvatarFallback>
+              <AvatarFallback>{avatarText}</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">田中太郎さん</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {userName}さん
+              </h1>
               <p className="text-gray-600">東京都在住</p>
               <Badge variant="secondary" className="mt-1">
                 投票記録: 5件

@@ -14,16 +14,42 @@ import { resolve } from "path"
 const envLocalPath = resolve(__dirname, "../.env.local")
 dotenv.config({ path: envLocalPath })
 
-export const AppDataSource = new DataSource({
-  type: "postgres",
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT) || 5432,
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
-  synchronize: true, // 本番はfalse推奨
-  logging: false,
-  entities: [User, SocialAccount],
-  migrations: [__dirname + "/migrations/*.ts"],
-  subscribers: [],
-})
+type GlobalWithDS = {
+  __appDataSource?: DataSource
+  __appDataSourceInit?: Promise<DataSource> | null
+}
+
+// ホットリロードでも単一インスタンスを維持するため globalThis にキャッシュ
+const g = globalThis as unknown as GlobalWithDS
+
+export const AppDataSource =
+  g.__appDataSource ??
+  new DataSource({
+    type: "postgres",
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT) || 5432,
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    synchronize: true, // 本番はfalse推奨
+    logging: false,
+    entities: [User, SocialAccount],
+    migrations: [__dirname + "/migrations/*.ts"],
+    subscribers: [],
+  })
+
+if (!g.__appDataSource) {
+  g.__appDataSource = AppDataSource
+}
+
+// 多重初期化を防ぐために Promise で初期化を直列化
+export async function getDataSource(): Promise<DataSource> {
+  if (AppDataSource.isInitialized) return AppDataSource
+  if (!g.__appDataSourceInit) {
+    g.__appDataSourceInit = AppDataSource.initialize().catch((err) => {
+      g.__appDataSourceInit = null
+      throw err
+    })
+  }
+  return g.__appDataSourceInit
+}
