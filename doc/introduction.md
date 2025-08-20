@@ -14,14 +14,24 @@ docker compose up -d
 
 ## アプリケーション起動方法
 
-### backend アプリケーション
-
-```shell
-cd backend && npm run live
-```
-
 ### frontend アプリケーション
 
 ```shell
-cd src && npm run dev
+cd src/frontend && npm run dev
 ```
+
+### backend アプリケーション
+
+```shell
+cd src/backend && npm run live
+```
+
+#### port が重複して 3001 で起動できない場合
+
+利用中の port を確認
+
+```sh
+for port in 3001 3002 3003; do echo "----- PORT :$port -----"; lsof -nP -iTCP:$port -sTCP:LISTEN; done
+```
+
+# その他
