@@ -6,6 +6,7 @@
   "scripts": {
     "live": "node_modules/nodemon/bin/nodemon.js",
     "seed:parties": "ts-node ./db/seeds/seed_parties.ts",
+    "seed:election-types": "ts-node ./db/seeds/seed_election_types.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -33,7 +33,7 @@ export const AppDataSource =
     database: process.env.DB_DATABASE,
     synchronize: true, // 本番はfalse推奨
     logging: false,
-    entities: [User, SocialAccount, Party],
+    entities: [User, SocialAccount, Party, ElectionType],
     migrations: [__dirname + "/migrations/*.ts"],
     subscribers: [],
   })

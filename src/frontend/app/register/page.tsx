@@ -36,6 +36,10 @@ export default function RegisterPage() {
     []
   )
   const [selectedParty, setSelectedParty] = useState<string>("")
+  const [electionTypes, setElectionTypes] = useState<
+    { election_type_id: number; name: string }[]
+  >([])
+  const [selectedElectionType, setSelectedElectionType] = useState<string>("")
 
   useEffect(() => {
     async function loadParties() {
@@ -48,7 +52,20 @@ export default function RegisterPage() {
         console.error(e)
       }
     }
+    async function loadElectionTypes() {
+      try {
+        const res = await fetch("http://localhost:3001/api/election-types")
+        if (!res.ok)
+          throw new Error(`Failed to fetch election types: ${res.status}`)
+        const data: { election_type_id: number; name: string }[] =
+          await res.json()
+        setElectionTypes(data)
+      } catch (e) {
+        console.error(e)
+      }
+    }
     loadParties()
+    loadElectionTypes()
   }, [])
 
   return (
@@ -104,23 +121,22 @@ export default function RegisterPage() {
               {/* Election Type */}
               <div className="space-y-2">
                 <Label htmlFor="election-type">選挙の種類</Label>
-                <Select>
-                  <SelectTrigger>
+                <Select
+                  value={selectedElectionType}
+                  onValueChange={setSelectedElectionType}
+                >
+                  <SelectTrigger id="election-type">
                     <SelectValue placeholder="選挙の種類を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="house-representatives">
-                      衆議院議員総選挙
-                    </SelectItem>
-                    <SelectItem value="house-councillors">
-                      参議院議員通常選挙
-                    </SelectItem>
-                    <SelectItem value="governor">都道府県知事選挙</SelectItem>
-                    <SelectItem value="mayor">市区町村長選挙</SelectItem>
-                    <SelectItem value="local-assembly">
-                      地方議会議員選挙
-                    </SelectItem>
-                    <SelectItem value="other">その他</SelectItem>
+                    {electionTypes.map((et) => (
+                      <SelectItem
+                        key={et.election_type_id}
+                        value={String(et.election_type_id)}
+                      >
+                        {et.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
