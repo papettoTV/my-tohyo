@@ -1,10 +1,10 @@
+// 投票履歴
 export interface VoteRecord {
   vote_id: number
   user_id: number
+  election_id: number
+  candidate_name: string | null
   vote_date: string // ISO8601形式の日付文字列
-  election_type_id: number
-  election_name: string
-  party_id: number
-  candidate_id: number
+  photo_url?: string | null
   notes?: string | null
 }

@@ -29,6 +29,8 @@ import { format } from "date-fns"
 import { ja } from "date-fns/locale"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function RegisterPage() {
   const [date, setDate] = useState<Date>(new Date())
@@ -40,6 +42,15 @@ export default function RegisterPage() {
     { election_type_id: number; name: string }[]
   >([])
   const [selectedElectionType, setSelectedElectionType] = useState<string>("")
+
+  // Inputs for submission
+  const [electionName, setElectionName] = useState<string>("")
+  const [candidateName, setCandidateName] = useState<string>("")
+  const [notes, setNotes] = useState<string>("")
+  const [loading, setLoading] = useState(false)
+
+  const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     async function loadParties() {
@@ -68,6 +79,61 @@ export default function RegisterPage() {
     loadElectionTypes()
   }, [])
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+
+    const vote_date = date ? format(date, "yyyy-MM-dd") : null
+    const election_type_id = selectedElectionType
+      ? Number(selectedElectionType)
+      : null
+
+    if (!vote_date) {
+      toast({ title: "エラー", description: "選挙日を選択してください" })
+      setLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch("http://localhost:3001/api/vote-records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vote_date,
+          election_type_id: election_type_id,
+          election_name: electionName ? electionName.trim() : "",
+          candidate_name: candidateName.trim(),
+          photo_url: null,
+          notes: notes || null,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const voteId = data.vote_id
+        router.push(`/history/${voteId}`)
+        return
+      }
+
+      let errMsg = `登録に失敗しました (${res.status})`
+      try {
+        const errBody = await res.json()
+        if (errBody && errBody.message) errMsg = errBody.message
+      } catch {
+        // ignore parse errors
+      }
+      toast({ title: "登録失敗", description: errMsg })
+    } catch (err) {
+      console.error("Failed to submit:", err)
+      toast({
+        title: "通信エラー",
+        description: "登録中に通信エラーが発生しました",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -92,109 +158,127 @@ export default function RegisterPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Election Date */}
-              <div className="space-y-2">
-                <Label htmlFor="election-date">選挙日</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal bg-transparent"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date
-                        ? format(date, "PPP", { locale: ja })
-                        : "日付を選択"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={(d) => d && setDate(d)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Election Type */}
-              <div className="space-y-2">
-                <Label htmlFor="election-type">選挙の種類</Label>
-                <Select
-                  value={selectedElectionType}
-                  onValueChange={setSelectedElectionType}
-                >
-                  <SelectTrigger id="election-type">
-                    <SelectValue placeholder="選挙の種類を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {electionTypes.map((et) => (
-                      <SelectItem
-                        key={et.election_type_id}
-                        value={String(et.election_type_id)}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Election Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="election-date">選挙日</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal bg-transparent"
                       >
-                        {et.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date
+                          ? format(date, "PPP", { locale: ja })
+                          : "日付を選択"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => d && setDate(d)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Election Name */}
-              <div className="space-y-2">
-                <Label htmlFor="election-name">選挙名</Label>
-                <Input
-                  id="election-name"
-                  placeholder="例: 第50回衆議院議員総選挙"
-                />
-              </div>
+                {/* Election Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="election-type">選挙の種類</Label>
+                  <Select
+                    value={selectedElectionType}
+                    onValueChange={setSelectedElectionType}
+                  >
+                    <SelectTrigger id="election-type">
+                      <SelectValue placeholder="選挙の種類を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {electionTypes.map((et) => (
+                        <SelectItem
+                          key={et.election_type_id}
+                          value={String(et.election_type_id)}
+                        >
+                          {et.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Political Party */}
-              <div className="space-y-2">
-                <Label htmlFor="party">政党名</Label>
-                <Select value={selectedParty} onValueChange={setSelectedParty}>
-                  <SelectTrigger id="party">
-                    <SelectValue placeholder="政党を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {parties.map((p) => (
-                      <SelectItem key={p.party_id} value={String(p.party_id)}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="text-sm text-gray-500">
+                  選挙は上の「選挙の種類」から選択してください。リストにない場合は下の「選挙名」を入力してください。
+                </div>
 
-              {/* Candidate Name */}
-              <div className="space-y-2">
-                <Label htmlFor="candidate">候補者名</Label>
-                <Input id="candidate" placeholder="例: 山田花子" />
-              </div>
+                {/* Election Name (informational) */}
+                <div className="space-y-2">
+                  <Label htmlFor="election-name">選挙名</Label>
+                  <Input
+                    id="election-name"
+                    placeholder="例: 第50回衆議院議員総選挙"
+                    value={electionName}
+                    onChange={(ev) => setElectionName(ev.target.value)}
+                  />
+                </div>
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">メモ（任意）</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="投票理由や感想など..."
-                  rows={3}
-                />
-              </div>
+                {/* Party */}
+                <div className="space-y-2">
+                  <Label htmlFor="party">政党名</Label>
+                  <Select
+                    value={selectedParty}
+                    onValueChange={setSelectedParty}
+                  >
+                    <SelectTrigger id="party">
+                      <SelectValue placeholder="政党を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parties.map((p) => (
+                        <SelectItem key={p.party_id} value={String(p.party_id)}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button className="flex-1">
-                  <Save className="w-4 h-4 mr-2" />
-                  登録する
-                </Button>
-                <Link href="/mypage" className="flex-1">
-                  <Button variant="outline" className="w-full bg-transparent">
-                    キャンセル
+                {/* Candidate Name (free text) */}
+                <div className="space-y-2">
+                  <Label htmlFor="candidate">候補者名</Label>
+                  <Input
+                    id="candidate"
+                    placeholder="例: 山田花子"
+                    value={candidateName}
+                    onChange={(ev) => setCandidateName(ev.target.value)}
+                  />
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">メモ（任意）</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="投票理由や感想など..."
+                    rows={3}
+                    value={notes}
+                    onChange={(ev) => setNotes(ev.target.value)}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button type="submit" className="flex-1" disabled={loading}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {loading ? "登録中..." : "登録する"}
                   </Button>
-                </Link>
-              </div>
+                  <Link href="/mypage" className="flex-1">
+                    <Button variant="outline" className="w-full bg-transparent">
+                      キャンセル
+                    </Button>
+                  </Link>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>

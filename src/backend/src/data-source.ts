@@ -2,11 +2,8 @@ import "reflect-metadata"
 import { DataSource } from "typeorm"
 import { User } from "./models/User"
 import { SocialAccount } from "./models/SocialAccount"
-import { Candidate } from "./models/Candidate"
-import { Election } from "./models/Election"
 import { ElectionType } from "./models/ElectionType"
 import { Party } from "./models/Party"
-import { VoteRecord } from "./models/VoteRecord"
 import * as dotenv from "dotenv"
 import { resolve } from "path"
 
@@ -33,7 +30,7 @@ export const AppDataSource =
     database: process.env.DB_DATABASE,
     synchronize: true, // 本番はfalse推奨
     logging: false,
-    entities: [User, SocialAccount, Party, ElectionType],
+    entities: [__dirname + "/models/*.ts"],
     migrations: [__dirname + "/migrations/*.ts"],
     subscribers: [],
   })

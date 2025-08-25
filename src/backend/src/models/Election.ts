@@ -1,3 +1,4 @@
+// 選挙
 export interface Election {
   election_id: number
   name: string

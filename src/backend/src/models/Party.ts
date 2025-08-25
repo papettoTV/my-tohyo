@@ -1,3 +1,4 @@
+// 政党
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm"
 
 @Entity({ name: "party" })

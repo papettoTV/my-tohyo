@@ -46,10 +46,9 @@ CREATE TABLE VOTE_RECORD (
   vote_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
   election_id INTEGER NOT NULL,
-  candidate_id INTEGER NOT NULL,
+  candidate_name VARCHAR(100) NOT NULL,
   vote_date DATE NOT NULL,
   photo_url VARCHAR(255),
   FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (election_id) REFERENCES ELECTION(election_id) ON DELETE CASCADE,
-  FOREIGN KEY (candidate_id) REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE
+  FOREIGN KEY (election_id) REFERENCES ELECTION(election_id) ON DELETE CASCADE
 );

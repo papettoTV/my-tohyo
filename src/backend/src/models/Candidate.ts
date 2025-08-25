@@ -1,3 +1,4 @@
+// 候補者
 export interface Candidate {
   candidate_id: number
   name: string
