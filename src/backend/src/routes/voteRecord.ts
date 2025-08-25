@@ -80,4 +80,32 @@ router.post("/", async (req, res) => {
   }
 })
 
+router.get("/:id", async (req, res) => {
+  try {
+    const ds = await getDataSource()
+    const { id } = req.params
+
+    const rows = await ds.query(
+      `
+      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.user_id, vr.election_id, vr.candidate_name,
+             e.name AS election_name, e.date AS election_date, et.name AS election_type_name
+      FROM VOTE_RECORD vr
+      LEFT JOIN ELECTION e ON vr.election_id = e.election_id
+      LEFT JOIN ELECTION_TYPE et ON e.election_type_id = et.election_type_id
+      WHERE vr.vote_id = $1
+      `,
+      [id]
+    )
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "Vote record not found" })
+    }
+
+    return res.json(rows[0])
+  } catch (e) {
+    console.error("Failed to fetch vote record:", e)
+    return res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 export default router
