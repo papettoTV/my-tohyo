@@ -6,5 +6,6 @@ export interface VoteRecord {
   candidate_name: string | null
   vote_date: string // ISO8601形式の日付文字列
   photo_url?: string | null
+  social_post_url?: string | null
   notes?: string | null
 }

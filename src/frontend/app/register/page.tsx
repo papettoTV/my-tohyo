@@ -47,6 +47,7 @@ export default function RegisterPage() {
   const [electionName, setElectionName] = useState<string>("")
   const [candidateName, setCandidateName] = useState<string>("")
   const [notes, setNotes] = useState<string>("")
+  const [socialUrl, setSocialUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
   const router = useRouter()
@@ -94,6 +95,21 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate SNS URL if provided
+    if (socialUrl && socialUrl.trim() !== "") {
+      try {
+        // use URL constructor for basic validation
+        new URL(socialUrl.trim())
+      } catch {
+        toast({
+          title: "エラー",
+          description: "SNS投稿URLが有効なURLではありません",
+        })
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       const res = await fetch("http://localhost:3001/api/vote-records", {
         method: "POST",
@@ -103,6 +119,7 @@ export default function RegisterPage() {
           election_type_id: election_type_id,
           election_name: electionName ? electionName.trim() : "",
           candidate_name: candidateName.trim(),
+          social_post_url: socialUrl ? socialUrl.trim() : null,
           photo_url: null,
           notes: notes || null,
         }),
@@ -264,6 +281,20 @@ export default function RegisterPage() {
                     value={notes}
                     onChange={(ev) => setNotes(ev.target.value)}
                   />
+                </div>
+
+                {/* SNS投稿URL（任意） */}
+                <div className="space-y-2">
+                  <Label htmlFor="social-url">SNS投稿URL（任意）</Label>
+                  <Input
+                    id="social-url"
+                    placeholder="例: https://twitter.com/username/status/1234567890"
+                    value={socialUrl}
+                    onChange={(ev) => setSocialUrl(ev.target.value)}
+                  />
+                  <div className="text-sm text-gray-500">
+                    SNSに投稿した投稿のURLを貼り付けてください（任意）
+                  </div>
                 </div>
 
                 {/* Action Buttons */}

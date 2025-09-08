@@ -8,7 +8,7 @@ router.get("/", async (_req, res) => {
   try {
     const ds = await getDataSource()
     const rows = await ds.query(`
-      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.user_id, vr.election_id, vr.candidate_name
+      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.social_post_url, vr.user_id, vr.election_id, vr.candidate_name
       FROM VOTE_RECORD vr
       ORDER BY vr.vote_id DESC
     `)
@@ -30,6 +30,7 @@ router.post("/", async (req, res) => {
       election_name,
       candidate_name,
       photo_url,
+      social_post_url,
       notes,
     } = req.body
 
@@ -68,8 +69,15 @@ router.post("/", async (req, res) => {
     const userId = 1
 
     const insertVote = await ds.query(
-      `INSERT INTO VOTE_RECORD (user_id, election_id, candidate_name, vote_date, photo_url) VALUES ($1, $2, $3, $4, $5) RETURNING vote_id`,
-      [userId, usedElectionId, candidate_name, vote_date, photo_url || null]
+      `INSERT INTO VOTE_RECORD (user_id, election_id, candidate_name, vote_date, social_post_url, photo_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING vote_id`,
+      [
+        userId,
+        usedElectionId,
+        candidate_name,
+        vote_date,
+        social_post_url || null,
+        photo_url || null,
+      ]
     )
     const voteId = insertVote[0].vote_id
 
@@ -87,7 +95,7 @@ router.get("/:id", async (req, res) => {
 
     const rows = await ds.query(
       `
-      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.user_id, vr.election_id, vr.candidate_name,
+      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.social_post_url, vr.user_id, vr.election_id, vr.candidate_name,
              e.name AS election_name, e.date AS election_date, et.name AS election_type_name
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION e ON vr.election_id = e.election_id
