@@ -3,8 +3,50 @@ import http from "http"
 import https from "https"
 import { URL } from "url"
 import zlib from "zlib"
+import fs from "fs"
+import path from "path"
+import crypto from "crypto"
 
 const router = Router()
+
+// 1-hour file-based cache for resolved imageUrl per requested URL
+const CACHE_TTL_MS = 60 * 60 * 1000
+const CACHE_DIR = path.resolve(process.cwd(), ".cache", "social-image")
+
+function cacheKeyFromUrl(u: string): string {
+  return crypto.createHash("sha256").update(u).digest("hex")
+}
+
+async function readCache(u: string): Promise<string | null> {
+  try {
+    const file = path.join(CACHE_DIR, `${cacheKeyFromUrl(u)}.json`)
+    const stat = await fs.promises.stat(file)
+    const age = Date.now() - stat.mtimeMs
+    if (age > CACHE_TTL_MS) return null
+    const raw = await fs.promises.readFile(file, "utf8")
+    const obj = JSON.parse(raw)
+    if (obj && typeof obj.imageUrl === "string" && obj.imageUrl) {
+      return obj.imageUrl
+    }
+  } catch {
+    // cache miss or parse error -> ignore
+  }
+  return null
+}
+
+async function writeCache(u: string, imageUrl: string): Promise<void> {
+  try {
+    await fs.promises.mkdir(CACHE_DIR, { recursive: true })
+    const file = path.join(CACHE_DIR, `${cacheKeyFromUrl(u)}.json`)
+    await fs.promises.writeFile(
+      file,
+      JSON.stringify({ imageUrl }, null, 2),
+      "utf8"
+    )
+  } catch {
+    // ignore cache write errors
+  }
+}
 
 async function fetchHtml(targetUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -376,6 +418,10 @@ async function fetchMediaUrlFromTwitterApi(
       res.on("end", () => {
         if (res.statusCode && res.statusCode >= 400) {
           // Non-success, don't expose details
+          console.log(
+            "[social-image] Twitter API return error status code:",
+            res.statusCode
+          )
           resolve(null)
           return
         }
@@ -462,16 +508,26 @@ router.get("/", async (req, res) => {
   }
 
   try {
+    // Cache lookup first (1h TTL)
+    const cached = await readCache(url)
+    if (cached) {
+      console.log("[social-image] cache hit:", url)
+      return res.json({ imageUrl: cached })
+    }
+    console.log("[social-image] cache miss:", url)
+
     // If the URL looks like a Twitter/X tweet, try official API first (recommended)
     const tweetId = extractTweetIdFromUrl(url)
     if (tweetId) {
       const apiResult = await fetchMediaUrlFromTwitterApi(tweetId)
       if (apiResult) {
+        await writeCache(url, apiResult).catch(() => {})
         return res.json({ imageUrl: apiResult })
       }
       // If API fails or token missing, fall through to existing HTML / oEmbed flow
       console.log(
-        "[social-image] Twitter API did not return media or token missing; falling back"
+        "[social-image] Twitter API did not return media or token missing; falling back",
+        apiResult
       )
     }
 
@@ -490,6 +546,9 @@ router.get("/", async (req, res) => {
       console.log("[social-image] oEmbed fallback result ->", imageUrl)
     }
 
+    if (imageUrl) {
+      await writeCache(url, imageUrl).catch(() => {})
+    }
     return res.json({ imageUrl: imageUrl || null })
   } catch (e) {
     console.error("Failed to fetch social image:", e)

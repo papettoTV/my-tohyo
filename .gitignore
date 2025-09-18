@@ -45,6 +45,9 @@ build/
 *.swp
 *.swo
 
+# Cache
+.cache/
+
 # Ignore backend/node_modules and src/node_modules if present
 backend/node_modules/
 src/node_modules/
