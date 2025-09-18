@@ -31,7 +31,7 @@ type VoteDetail = {
   election_id: number
   candidate_name?: string | null
   vote_date?: string | null
-  photo_url?: string | null
+  social_post_url?: string | null
   notes?: string | null
   election_name?: string | null
   election_date?: string | null
@@ -44,6 +44,8 @@ export default function HistoryDetailPage() {
 
   const [vote, setVote] = useState<VoteDetail | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null)
+  const [imageLoading, setImageLoading] = useState<boolean>(false)
 
   useEffect(() => {
     let mounted = true
@@ -97,6 +99,43 @@ export default function HistoryDetailPage() {
       mounted = false
     }
   }, [id])
+
+  useEffect(() => {
+    // Resolve image URL from social_post_url via backend API
+    setResolvedImageUrl(null)
+    if (!vote?.social_post_url) return
+
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+    let alive = true
+    setImageLoading(true)
+
+    const apiUrl = `${base}/api/social-image?url=${encodeURIComponent(
+      vote.social_post_url
+    )}`
+
+    fetch(apiUrl, { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`)
+        return res.json()
+      })
+      .then((data: { imageUrl?: string }) => {
+        if (!alive) return
+        setResolvedImageUrl(data?.imageUrl ?? null)
+      })
+      .catch((e) => {
+        console.error("Failed to resolve social image URL:", e)
+        if (!alive) return
+        setResolvedImageUrl(null)
+      })
+      .finally(() => {
+        if (!alive) return
+        setImageLoading(false)
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [vote?.social_post_url])
 
   // loading state
   if (vote === undefined) {
@@ -171,7 +210,11 @@ export default function HistoryDetailPage() {
   const electionType = vote.election_type_name || "—"
   const candidateName = vote.candidate_name || "—"
   const partyName = "—" // party isn't currently joined in API; keep placeholder
-  const photoUrl = vote.photo_url || "/placeholder.svg?height=200&width=300"
+  const socialPostUrlRaw = vote.social_post_url || null
+  const displayImageUrl =
+    resolvedImageUrl ||
+    socialPostUrlRaw ||
+    "/placeholder.svg?height=200&width=300"
   const notes = vote.notes || ""
 
   return (
@@ -242,7 +285,7 @@ export default function HistoryDetailPage() {
                   <div className="border rounded-lg p-4 bg-gray-50">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={photoUrl}
+                      src={displayImageUrl}
                       alt="投票写真"
                       className="w-full h-48 object-cover rounded"
                     />
