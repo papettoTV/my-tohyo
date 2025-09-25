@@ -12,36 +12,48 @@ import { Badge } from "@/components/ui/badge"
 import { History, LogOut, Plus, Calendar, Vote } from "lucide-react"
 import Link from "next/link"
 
-export default async function MyPage() {
-  const recentVotes = [
-    {
-      id: 1,
-      date: "2024年10月27日",
-      electionName: "第50回衆議院議員総選挙",
-      candidate: "山田花子",
-      party: "立憲民主党",
-    },
-    {
-      id: 2,
-      date: "2024年7月7日",
-      electionName: "東京都知事選挙",
-      candidate: "小池百合子",
-      party: "無所属",
-    },
-    {
-      id: 3,
-      date: "2023年4月23日",
-      electionName: "東京都議会議員選挙",
-      candidate: "佐藤次郎",
-      party: "自由民主党",
-    },
-  ]
+type VoteRecord = {
+  vote_id: number
+  vote_date: string
+  user_id: number
+  election_id: number | null
+  candidate_name?: string | null
+  social_post_url?: string | null
+  photo_url?: string | null
+}
 
-  const token = (await cookies()).get("token")?.value
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"
+function formatDisplayDate(value?: string | null): string {
+  if (!value) return "日付不明"
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  try {
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(parsed)
+  } catch {
+    return value
+  }
+}
+
+function selectApiBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.API_BASE_URL ||
+    "http://localhost:3001"
+  )
+}
+
+export default async function MyPage() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get("token")?.value
+  const API_BASE = selectApiBase()
 
   let userName = "ユーザー"
+  let userRegion = "地域未設定"
+  let userId: number | null = null
 
   try {
     if (token) {
@@ -54,14 +66,55 @@ export default async function MyPage() {
       if (res.ok) {
         const user = await res.json()
         userName = user?.name || user?.email || "ユーザー"
+        userRegion = user?.region || "地域未設定"
+        userId = typeof user?.user_id === "number" ? user.user_id : null
       }
     }
   } catch {
     // 失敗時はデフォルトのまま表示
   }
 
-  // const avatarText = userName ? userName.slice(0, 2) : "？"
-  const avatarText = userName
+  let voteRecords: VoteRecord[] = []
+  if (token) {
+    try {
+      const res = await fetch(`${API_BASE}/api/vote-records`, {
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          voteRecords = data.filter((item): item is VoteRecord => {
+            return (
+              typeof item?.vote_id === "number" &&
+              typeof item?.vote_date === "string" &&
+              typeof item?.user_id === "number"
+            )
+          })
+        }
+      }
+    } catch {
+      // 取得失敗時は空配列のまま
+    }
+  }
+
+  const filteredRecords = userId
+    ? voteRecords.filter((record) => record.user_id === userId)
+    : voteRecords
+
+  const sortedRecords = [...filteredRecords].sort((a, b) => {
+    const aTime = new Date(a.vote_date).getTime()
+    const bTime = new Date(b.vote_date).getTime()
+    return Number.isNaN(bTime) ? -1 : Number.isNaN(aTime) ? 1 : bTime - aTime
+  })
+
+  const recentVotes = sortedRecords.slice(0, 3)
+  const voteCount = filteredRecords.length
+
+  const avatarText = userName ? userName.slice(0, 2) : "？"
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,9 +130,9 @@ export default async function MyPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {userName}さん
               </h1>
-              <p className="text-gray-600">東京都在住</p>
+              <p className="text-gray-600">{userRegion}</p>
               <Badge variant="secondary" className="mt-1">
-                投票記録: 5件
+                投票記録: {voteCount}件
               </Badge>
             </div>
           </div>
@@ -129,35 +182,50 @@ export default async function MyPage() {
             <CardDescription>最新の投票記録</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 mb-4">
-              {recentVotes.map((vote) => (
-                <div
-                  key={vote.id}
-                  className="border-l-4 border-blue-500 pl-4 py-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm">
-                        {vote.electionName}
-                      </h4>
-                      <div className="flex items-center text-xs text-gray-600 mt-1">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {vote.date}
-                      </div>
-                      <div className="flex items-center text-xs text-gray-600 mt-1">
-                        <Vote className="w-3 h-3 mr-1" />
-                        {vote.candidate}（{vote.party}）
+            {recentVotes.length === 0 ? (
+              <div className="text-sm text-gray-600">
+                まだ投票記録がありません。
+              </div>
+            ) : (
+              <div className="space-y-4 mb-4">
+                {recentVotes.map((vote) => {
+                  const candidateDisplay =
+                    vote.candidate_name?.trim() || "候補者名未登録"
+                  const electionBadge = vote.election_id
+                    ? `選挙ID: ${vote.election_id}`
+                    : "選挙情報なし"
+                  return (
+                    <div
+                      key={vote.vote_id}
+                      className="border-l-4 border-blue-500 pl-4 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <Vote className="w-4 h-4 mr-2 text-blue-600" />
+                            <span className="font-semibold text-base text-gray-900">
+                              {candidateDisplay}
+                            </span>
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                              {electionBadge}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-xs text-gray-600 mt-1">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {formatDisplayDate(vote.vote_date)}
+                          </div>
+                        </div>
+                        <Link href={`/history/${vote.vote_id}`}>
+                          <Button variant="outline" size="sm">
+                            詳細
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                    <Link href={`/history/${vote.id}`}>
-                      <Button variant="outline" size="sm">
-                        詳細
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  )
+                })}
+              </div>
+            )}
             <Link href="/history">
               <Button className="w-full bg-transparent" variant="outline">
                 履歴一覧を見る

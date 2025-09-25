@@ -38,6 +38,15 @@ type VoteDetail = {
   election_type_name?: string | null
 }
 
+function resolveApiBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.API_BASE_URL ||
+    "http://localhost:3001"
+  )
+}
+
 export default function HistoryDetailPage() {
   const params = useParams()
   const id = params?.id as string
@@ -49,7 +58,7 @@ export default function HistoryDetailPage() {
 
   useEffect(() => {
     let mounted = true
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+    const base = resolveApiBase()
 
     setVote(undefined)
     setError(null)
@@ -72,7 +81,23 @@ export default function HistoryDetailPage() {
 
     const url = `${base}/api/vote-records/${resolvedId}`
 
-    fetch(url, { cache: "no-store" })
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) {
+      if (mounted) {
+        setError("認証情報が見つかりません")
+        setVote(null)
+      }
+      return () => {
+        mounted = false
+      }
+    }
+
+    fetch(url, {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => {
         if (res.status === 404) {
           if (mounted) setVote(null)
@@ -105,15 +130,29 @@ export default function HistoryDetailPage() {
     setResolvedImageUrl(null)
     if (!vote?.social_post_url) return
 
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+    const base = resolveApiBase()
     let alive = true
     setImageLoading(true)
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) {
+      setResolvedImageUrl(null)
+      setImageLoading(false)
+      return () => {
+        alive = false
+      }
+    }
 
     const apiUrl = `${base}/api/social-image?url=${encodeURIComponent(
       vote.social_post_url
     )}`
 
-    fetch(apiUrl, { cache: "no-store" })
+    fetch(apiUrl, {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) throw new Error(`API error: ${res.status}`)
         return res.json()

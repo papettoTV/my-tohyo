@@ -17,6 +17,15 @@ type VoteRecord = {
   candidate_name?: string | null
 }
 
+function resolveApiBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.API_BASE_URL ||
+    "http://localhost:3001"
+  )
+}
+
 function SocialImage({
   photoUrl,
   socialUrl,
@@ -56,8 +65,19 @@ function SocialImage({
       }
     }
 
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+    const base = resolveApiBase()
     setLoading(true)
+
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+    console.log("token:", token)
+
+    const headers: HeadersInit = token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {}
 
     fetch(`${base}/api/social-image?url=${encodeURIComponent(socialUrl)}`, {
       cache: "no-store",
@@ -120,10 +140,27 @@ export default function HistoryPage() {
 
   useEffect(() => {
     let mounted = true
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+    const base = resolveApiBase()
     setRecords(undefined)
     setError(null)
-    fetch(`${base}/api/vote-records`, { cache: "no-store" })
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) {
+      if (mounted) {
+        setError("認証情報が見つかりません")
+        setRecords(null)
+      }
+      return () => {
+        mounted = false
+      }
+    }
+
+    fetch(`${base}/api/vote-records`, {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           throw new Error(`API error: ${res.status}`)

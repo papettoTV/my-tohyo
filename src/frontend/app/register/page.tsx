@@ -33,6 +33,11 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function RegisterPage() {
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.API_BASE_URL ||
+    "http://localhost:3001"
   const [date, setDate] = useState<Date>(new Date())
   const [parties, setParties] = useState<{ party_id: number; name: string }[]>(
     []
@@ -49,14 +54,18 @@ export default function RegisterPage() {
   const [notes, setNotes] = useState<string>("")
   const [socialUrl, setSocialUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
 
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setToken(localStorage.getItem("token"))
+    }
     async function loadParties() {
       try {
-        const res = await fetch("http://localhost:3001/api/parties")
+        const res = await fetch(`${API_BASE}/api/parties`)
         if (!res.ok) throw new Error(`Failed to fetch parties: ${res.status}`)
         const data: { party_id: number; name: string }[] = await res.json()
         setParties(data)
@@ -66,7 +75,7 @@ export default function RegisterPage() {
     }
     async function loadElectionTypes() {
       try {
-        const res = await fetch("http://localhost:3001/api/election-types")
+        const res = await fetch(`${API_BASE}/api/election-types`)
         if (!res.ok)
           throw new Error(`Failed to fetch election types: ${res.status}`)
         const data: { election_type_id: number; name: string }[] =
@@ -78,7 +87,7 @@ export default function RegisterPage() {
     }
     loadParties()
     loadElectionTypes()
-  }, [])
+  }, [API_BASE])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -111,9 +120,18 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/vote-records", {
+      if (!token) {
+        toast({ title: "エラー", description: "認証情報が見つかりません" })
+        setLoading(false)
+        return
+      }
+
+      const res = await fetch(`${API_BASE}/api/vote-records`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           vote_date,
           election_type_id: election_type_id,

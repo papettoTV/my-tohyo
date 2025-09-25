@@ -1,17 +1,53 @@
 import { Router } from "express"
 import { getDataSource } from "../data-source"
+import { authenticateJWT } from "../middleware/auth"
 
 const router = Router()
 
+function extractUserId(tokenUser: any): number | null {
+  if (!tokenUser) return null
+  const candidates = [tokenUser.user_id, tokenUser.id]
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate
+    }
+    if (typeof candidate === "string") {
+      const num = Number(candidate)
+      if (Number.isFinite(num)) {
+        return num
+      }
+    }
+  }
+  return null
+}
+
 // 投票記録一覧取得
-router.get("/", async (_req, res) => {
+router.get("/", authenticateJWT, async (req, res) => {
   try {
     const ds = await getDataSource()
-    const rows = await ds.query(`
-      SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.social_post_url, vr.user_id, vr.election_id, vr.candidate_name
+    // @ts-ignore
+    const tokenUser = req.user as any
+    const userId = extractUserId(tokenUser)
+    console.log("userId", userId)
+    if (userId === null) {
+      return res.status(400).json({ message: "Invalid user context" })
+    }
+
+    const rows = await ds.query(
+      `
+      SELECT vr.vote_id,
+             vr.vote_date,
+             vr.photo_url,
+             vr.social_post_url,
+             vr.user_id,
+             vr.election_id,
+             vr.candidate_name
       FROM VOTE_RECORD vr
+      WHERE vr.user_id = $1
       ORDER BY vr.vote_id DESC
-    `)
+    `,
+      [userId]
+    )
     return res.json(rows)
   } catch (e) {
     console.error("Failed to fetch vote records:", e)
@@ -20,7 +56,7 @@ router.get("/", async (_req, res) => {
 })
 
 // 投票記録新規作成
-router.post("/", async (req, res) => {
+router.post("/", authenticateJWT, async (req, res) => {
   try {
     const ds = await getDataSource()
     const {
@@ -65,8 +101,13 @@ router.post("/", async (req, res) => {
       usedElectionId = insertElection[0].election_id
     }
 
-    // TODO: Replace with authenticated user id when auth is available
-    const userId = 1
+    // @ts-ignore
+    const tokenUser = req.user as any
+    const userId = extractUserId(tokenUser)
+
+    if (userId === null) {
+      return res.status(400).json({ message: "Invalid user context" })
+    }
 
     const insertVote = await ds.query(
       `INSERT INTO VOTE_RECORD (user_id, election_id, candidate_name, vote_date, social_post_url, photo_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING vote_id`,
@@ -88,10 +129,16 @@ router.post("/", async (req, res) => {
   }
 })
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", authenticateJWT, async (req, res) => {
   try {
     const ds = await getDataSource()
     const { id } = req.params
+    // @ts-ignore
+    const tokenUser = req.user as any
+    const userId = extractUserId(tokenUser)
+    if (userId === null) {
+      return res.status(400).json({ message: "Invalid user context" })
+    }
 
     const rows = await ds.query(
       `
@@ -100,9 +147,9 @@ router.get("/:id", async (req, res) => {
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION e ON vr.election_id = e.election_id
       LEFT JOIN ELECTION_TYPE et ON e.election_type_id = et.election_type_id
-      WHERE vr.vote_id = $1
+      WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
-      [id]
+      [id, userId]
     )
 
     if (!rows || rows.length === 0) {
