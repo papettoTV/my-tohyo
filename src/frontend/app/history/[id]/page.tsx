@@ -36,6 +36,8 @@ type VoteDetail = {
   election_name?: string | null
   election_date?: string | null
   election_type_name?: string | null
+  party_id?: number | null
+  party_name?: string | null
 }
 
 function resolveApiBase(): string {
@@ -248,7 +250,7 @@ export default function HistoryDetailPage() {
     : "—"
   const electionType = vote.election_type_name || "—"
   const candidateName = vote.candidate_name || "—"
-  const partyName = "—" // party isn't currently joined in API; keep placeholder
+  const partyName = vote.party_name?.trim() || "—"
   const socialPostUrlRaw = vote.social_post_url || null
   const displayImageUrl =
     resolvedImageUrl ||

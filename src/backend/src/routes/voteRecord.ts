@@ -28,7 +28,6 @@ router.get("/", authenticateJWT, async (req, res) => {
     // @ts-ignore
     const tokenUser = req.user as any
     const userId = extractUserId(tokenUser)
-    console.log("userId", userId)
     if (userId === null) {
       return res.status(400).json({ message: "Invalid user context" })
     }
@@ -41,8 +40,12 @@ router.get("/", authenticateJWT, async (req, res) => {
              vr.social_post_url,
              vr.user_id,
              vr.election_id,
-             vr.candidate_name
+             vr.candidate_name,
+             c.party_id,
+             p.name AS party_name
       FROM VOTE_RECORD vr
+      LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
+      LEFT JOIN PARTY p ON p.party_id = c.party_id
       WHERE vr.user_id = $1
       ORDER BY vr.vote_id DESC
     `,
@@ -143,10 +146,13 @@ router.get("/:id", authenticateJWT, async (req, res) => {
     const rows = await ds.query(
       `
       SELECT vr.vote_id, vr.vote_date, vr.photo_url, vr.social_post_url, vr.user_id, vr.election_id, vr.candidate_name,
-             e.name AS election_name, e.date AS election_date, et.name AS election_type_name
+             e.name AS election_name, e.date AS election_date, et.name AS election_type_name,
+             c.party_id, p.name AS party_name
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION e ON vr.election_id = e.election_id
       LEFT JOIN ELECTION_TYPE et ON e.election_type_id = et.election_type_id
+      LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
+      LEFT JOIN PARTY p ON p.party_id = c.party_id
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
       [id, userId]

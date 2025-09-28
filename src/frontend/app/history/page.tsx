@@ -15,6 +15,8 @@ type VoteRecord = {
   user_id: number
   election_id: number
   candidate_name?: string | null
+  party_id?: number | null
+  party_name?: string | null
 }
 
 function resolveApiBase(): string {

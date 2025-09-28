@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { History, LogOut, Plus, Calendar, Vote } from "lucide-react"
+import { History, LogOut, Plus, Calendar, Vote, Building } from "lucide-react"
 import Link from "next/link"
 
 type VoteRecord = {
@@ -20,6 +20,8 @@ type VoteRecord = {
   candidate_name?: string | null
   social_post_url?: string | null
   photo_url?: string | null
+  party_id?: number | null
+  party_name?: string | null
 }
 
 function formatDisplayDate(value?: string | null): string {
@@ -191,9 +193,8 @@ export default async function MyPage() {
                 {recentVotes.map((vote) => {
                   const candidateDisplay =
                     vote.candidate_name?.trim() || "候補者名未登録"
-                  const electionBadge = vote.election_id
-                    ? `選挙ID: ${vote.election_id}`
-                    : "選挙情報なし"
+                  const partyDisplay =
+                    vote.party_name?.trim() || "党情報なし"
                   return (
                     <div
                       key={vote.vote_id}
@@ -206,9 +207,10 @@ export default async function MyPage() {
                             <span className="font-semibold text-base text-gray-900">
                               {candidateDisplay}
                             </span>
-                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                              {electionBadge}
-                            </span>
+                          </div>
+                          <div className="flex items-center text-xs text-gray-600 mt-1">
+                            <Building className="w-3 h-3 mr-1" />
+                            {partyDisplay}
                           </div>
                           <div className="flex items-center text-xs text-gray-600 mt-1">
                             <Calendar className="w-3 h-3 mr-1" />
