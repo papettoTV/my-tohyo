@@ -25,6 +25,7 @@ CREATE TABLE ELECTION (
   name VARCHAR(100) NOT NULL,
   date DATE NOT NULL,
   election_type_id INTEGER NOT NULL,
+  party_name VARCHAR(100),
   FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE CASCADE
 );
 

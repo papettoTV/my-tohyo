@@ -126,6 +126,11 @@ export default function RegisterPage() {
         return
       }
 
+      const partyIdValue = selectedParty ? Number(selectedParty) : null
+      const partyNameValue = selectedParty
+        ? parties.find((p) => String(p.party_id) === selectedParty)?.name?.trim() || ""
+        : ""
+
       const res = await fetch(`${API_BASE}/api/vote-records`, {
         method: "POST",
         headers: {
@@ -137,6 +142,8 @@ export default function RegisterPage() {
           election_type_id: election_type_id,
           election_name: electionName ? electionName.trim() : "",
           candidate_name: candidateName.trim(),
+          party_id: partyIdValue,
+          party_name: partyNameValue || null,
           social_post_url: socialUrl ? socialUrl.trim() : null,
           photo_url: null,
           notes: notes || null,

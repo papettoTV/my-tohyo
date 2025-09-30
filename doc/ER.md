@@ -24,6 +24,7 @@ erDiagram
         string name "選挙名"
         date date "選挙日"
         int election_type_id FK "選挙種類ID"
+        string party_name "主要政党名"
     }
     PARTY {
         int party_id PK "政党ID"
@@ -69,7 +70,7 @@ erDiagram
 
 - **ELECTION（選挙）**
 
-  - 選挙 ID（主キー）、選挙名、選挙日、選挙種類 ID（外部キー）
+  - 選挙 ID（主キー）、選挙名、選挙日、選挙種類 ID（外部キー）、主要政党名
 
 - **PARTY（政党）**
 

@@ -8,4 +8,5 @@ export interface VoteRecord {
   photo_url?: string | null
   social_post_url?: string | null
   notes?: string | null
+  party_name?: string | null
 }
