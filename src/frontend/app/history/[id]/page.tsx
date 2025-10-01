@@ -28,16 +28,15 @@ import { format } from "date-fns"
 type VoteDetail = {
   vote_id: number
   user_id: number
-  election_id: number
   candidate_name?: string | null
   vote_date?: string | null
   social_post_url?: string | null
   notes?: string | null
   election_name?: string | null
-  election_date?: string | null
   election_type_name?: string | null
   party_id?: number | null
   party_name?: string | null
+  election_type_id?: number | null
 }
 
 function resolveApiBase(): string {
@@ -242,8 +241,8 @@ export default function HistoryDetailPage() {
 
   // success: vote is VoteDetail
   const electionTitle = vote.election_name || "—"
-  const electionDateDisplay = vote.election_date
-    ? format(new Date(vote.election_date), "yyyy年M月d日")
+  const electionDateDisplay = vote.vote_date
+    ? format(new Date(vote.vote_date), "yyyy年M月d日")
     : "—"
   const voteDateDisplay = vote.vote_date
     ? format(new Date(vote.vote_date), "yyyy年M月d日 HH:mm")

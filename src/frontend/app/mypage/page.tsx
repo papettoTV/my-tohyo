@@ -16,12 +16,15 @@ type VoteRecord = {
   vote_id: number
   vote_date: string
   user_id: number
-  election_id: number | null
+  election_name: string
+  election_type_id: number
+  election_type_name?: string | null
   candidate_name?: string | null
   social_post_url?: string | null
   photo_url?: string | null
   party_id?: number | null
   party_name?: string | null
+  notes?: string | null
 }
 
 function formatDisplayDate(value?: string | null): string {
@@ -93,7 +96,9 @@ export default async function MyPage() {
             return (
               typeof item?.vote_id === "number" &&
               typeof item?.vote_date === "string" &&
-              typeof item?.user_id === "number"
+              typeof item?.user_id === "number" &&
+              typeof item?.election_name === "string" &&
+              typeof item?.election_type_id === "number"
             )
           })
         }
@@ -207,6 +212,10 @@ export default async function MyPage() {
                             <span className="font-semibold text-base text-gray-900">
                               {candidateDisplay}
                             </span>
+                          </div>
+                          <div className="flex items-center text-xs text-gray-600 mt-1">
+                            <History className="w-3 h-3 mr-1" />
+                            {vote.election_name}
                           </div>
                           <div className="flex items-center text-xs text-gray-600 mt-1">
                             <Building className="w-3 h-3 mr-1" />

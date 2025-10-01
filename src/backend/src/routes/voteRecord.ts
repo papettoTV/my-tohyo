@@ -39,12 +39,15 @@ router.get("/", authenticateJWT, async (req, res) => {
              vr.photo_url,
              vr.social_post_url,
              vr.user_id,
-             vr.election_id,
              vr.candidate_name,
+             vr.election_name,
+             vr.election_type_id,
+             vr.notes,
+             COALESCE(vr.party_name, p.name) AS party_name,
              c.party_id,
-             COALESCE(e.party_name, p.name) AS party_name
+             et.name AS election_type_name
       FROM VOTE_RECORD vr
-      LEFT JOIN ELECTION e ON vr.election_id = e.election_id
+      LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
       WHERE vr.user_id = $1
@@ -65,7 +68,6 @@ router.post("/", authenticateJWT, async (req, res) => {
     const ds = await getDataSource()
     const {
       vote_date,
-      election_id,
       election_type_id,
       election_name,
       candidate_name,
@@ -87,17 +89,30 @@ router.post("/", authenticateJWT, async (req, res) => {
       return res.status(400).json({ message: "candidate_name is required" })
     }
 
-    if (!election_id && !(election_type_id && election_name)) {
-      return res.status(400).json({
-        message:
-          "Missing election info: provide election_id or both election_type_id and election_name",
-      })
+    const normalizedElectionName =
+      typeof election_name === "string" ? election_name.trim() : ""
+    if (!normalizedElectionName) {
+      return res.status(400).json({ message: "election_name is required" })
+    }
+
+    const normalizedElectionTypeId = Number(election_type_id)
+    if (
+      Number.isNaN(normalizedElectionTypeId) ||
+      !Number.isFinite(normalizedElectionTypeId)
+    ) {
+      return res.status(400).json({ message: "Invalid election_type_id" })
+    }
+
+    const etRows = await ds.query(
+      `SELECT election_type_id FROM ELECTION_TYPE WHERE election_type_id = $1`,
+      [normalizedElectionTypeId]
+    )
+    if (!etRows || etRows.length === 0) {
+      return res.status(400).json({ message: "Invalid election_type_id" })
     }
 
     const normalizedPartyId =
-      party_id === undefined || party_id === null
-        ? null
-        : Number(party_id)
+      party_id === undefined || party_id === null ? null : Number(party_id)
     let normalizedPartyName =
       typeof party_name === "string" && party_name.trim() !== ""
         ? party_name.trim()
@@ -120,27 +135,6 @@ router.post("/", authenticateJWT, async (req, res) => {
       if (!normalizedPartyName) {
         normalizedPartyName = partyRows[0].name || null
       }
-    }
-
-    // Determine election_id to use: prefer provided election_id; otherwise create a new ELECTION
-    let usedElectionId = election_id
-    if (!usedElectionId) {
-      // ensure provided election_type_id exists to avoid FK violation
-      const etRows = await ds.query(
-        `SELECT election_type_id FROM ELECTION_TYPE WHERE election_type_id = $1`,
-        [election_type_id]
-      )
-      if (!etRows || etRows.length === 0) {
-        return res.status(400).json({ message: "Invalid election_type_id" })
-      }
-
-      const insertElection = await ds.query(
-        `INSERT INTO ELECTION (name, date, election_type_id, party_name) VALUES ($1, $2, $3, $4) RETURNING election_id`,
-        [election_name, vote_date, election_type_id, normalizedPartyName]
-      )
-      usedElectionId = insertElection[0].election_id
-    } else if (normalizedPartyName) {
-      await ds.query(`UPDATE ELECTION SET party_name = $1 WHERE election_id = $2`, [normalizedPartyName, usedElectionId])
     }
 
     // Ensure candidate master is aligned when party information is provided
@@ -175,14 +169,28 @@ router.post("/", authenticateJWT, async (req, res) => {
     }
 
     const insertVote = await ds.query(
-      `INSERT INTO VOTE_RECORD (user_id, election_id, candidate_name, vote_date, social_post_url, photo_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING vote_id`,
+      `INSERT INTO VOTE_RECORD (
+         user_id,
+         candidate_name,
+         election_name,
+         election_type_id,
+         vote_date,
+         party_name,
+         social_post_url,
+         photo_url,
+         notes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING vote_id`,
       [
         userId,
-        usedElectionId,
         normalizedCandidateName,
+        normalizedElectionName,
+        normalizedElectionTypeId,
         vote_date,
+        normalizedPartyName,
         social_post_url || null,
         photo_url || null,
+        notes || null,
       ]
     )
     const voteId = insertVote[0].vote_id
@@ -212,16 +220,15 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              vr.photo_url,
              vr.social_post_url,
              vr.user_id,
-             vr.election_id,
              vr.candidate_name,
-             e.name AS election_name,
-             e.date AS election_date,
-             et.name AS election_type_name,
+             vr.election_name,
+             vr.election_type_id,
+             vr.notes,
+             COALESCE(vr.party_name, p.name) AS party_name,
              c.party_id,
-             COALESCE(e.party_name, p.name) AS party_name
+             et.name AS election_type_name
       FROM VOTE_RECORD vr
-      LEFT JOIN ELECTION e ON vr.election_id = e.election_id
-      LEFT JOIN ELECTION_TYPE et ON e.election_type_id = et.election_type_id
+      LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
       WHERE vr.vote_id = $1 AND vr.user_id = $2

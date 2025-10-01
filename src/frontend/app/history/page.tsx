@@ -2,9 +2,17 @@
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Search, Calendar, Vote, Eye, Filter } from "lucide-react"
+import {
+  ArrowLeft,
+  Search,
+  Calendar,
+  Vote,
+  Eye,
+  Filter,
+  Building,
+  History,
+} from "lucide-react"
 import Link from "next/link"
 
 type VoteRecord = {
@@ -13,10 +21,13 @@ type VoteRecord = {
   photo_url?: string | null
   social_post_url?: string | null
   user_id: number
-  election_id: number
+  election_name: string
+  election_type_id: number
+  election_type_name?: string | null
   candidate_name?: string | null
   party_id?: number | null
   party_name?: string | null
+  notes?: string | null
 }
 
 function resolveApiBase(): string {
@@ -73,8 +84,6 @@ function SocialImage({
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-    console.log("token:", token)
-
     const headers: HeadersInit = token
       ? {
           Authorization: `Bearer ${token}`,
@@ -83,6 +92,7 @@ function SocialImage({
 
     fetch(`${base}/api/social-image?url=${encodeURIComponent(socialUrl)}`, {
       cache: "no-store",
+      headers,
     })
       .then((res) => {
         if (!res.ok) {
@@ -251,12 +261,21 @@ export default function HistoryPage() {
                       <h3 className="font-semibold text-lg mb-1">
                         {record.candidate_name || "—"}
                       </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 text-sm text-gray-600">
+                        <div className="flex items-center mb-1 sm:mb-0">
                           <Vote className="w-4 h-4 mr-1" />
-                          {record.candidate_name}
+                          {record.candidate_name || "—"}
                         </div>
-                        <span>(投票ID: {record.vote_id})</span>
+                        <span className="flex items-center">
+                          <History className="w-4 h-4 mr-1" />
+                          {record.election_name}
+                        </span>
+                        {record.party_name && (
+                          <span className="flex items-center">
+                            <Building className="w-4 h-4 mr-1" />
+                            {record.party_name}
+                          </span>
+                        )}
                       </div>
                     </div>
 

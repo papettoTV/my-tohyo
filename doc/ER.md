@@ -19,13 +19,6 @@ erDiagram
         int election_type_id PK "選挙種類ID"
         string name "選挙種類名（衆院選挙、参院選挙等）"
     }
-    ELECTION {
-        int election_id PK "選挙ID"
-        string name "選挙名"
-        date date "選挙日"
-        int election_type_id FK "選挙種類ID"
-        string party_name "主要政党名"
-    }
     PARTY {
         int party_id PK "政党ID"
         string name "政党名"
@@ -40,17 +33,20 @@ erDiagram
     VOTE_RECORD {
         int vote_id PK "投票記録ID"
         int user_id FK "ユーザーID"
-        int election_id FK "選挙ID"
-        int candidate_id FK "候補者ID"
+        string candidate_name "候補者名"
+        string election_name "選挙名"
+        int election_type_id FK "選挙種類ID"
         date vote_date "投票日"
+        string party_name "政党名"
         string photo_url "投票写真URL"
+        string social_post_url "SNS投稿URL"
+        text notes "メモ"
     }
 
     USER ||--o{ SOCIAL_ACCOUNT : "連携"
     USER ||--o{ VOTE_RECORD : "投票"
-    ELECTION_TYPE ||--o{ ELECTION : "種別"
-    ELECTION ||--o{ VOTE_RECORD : "投票"
-    CANDIDATE ||--o{ VOTE_RECORD : "投票"
+    ELECTION_TYPE ||--o{ VOTE_RECORD : "分類"
+    CANDIDATE ||--o{ VOTE_RECORD : "参考"
     PARTY ||--o{ CANDIDATE : "所属"
 ```
 
@@ -68,10 +64,6 @@ erDiagram
 
   - 選挙種類 ID（主キー）、選挙種類名（衆院選挙、参院選挙、都道府県長選挙、市長選挙等）
 
-- **ELECTION（選挙）**
-
-  - 選挙 ID（主キー）、選挙名、選挙日、選挙種類 ID（外部キー）、主要政党名
-
 - **PARTY（政党）**
 
   - 政党 ID（主キー）、政党名
@@ -81,13 +73,12 @@ erDiagram
   - 候補者 ID（主キー）、氏名、所属政党（外部キー）、マニフェスト URL、実績情報
 
 - **VOTE_RECORD（投票記録）**
-  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、選挙 ID（外部キー）、候補者 ID（外部キー）、投票日、投票写真 URL
+  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名、選挙名、選挙種類 ID（外部キー）、投票日、政党名、投票写真 URL、SNS 投稿 URL、メモ
 
 ## リレーション
 
 - ユーザーは複数のソーシャルアカウントを持つ（1 対多）
 - ユーザーは複数の投票記録を持つ（1 対多）
-- 選挙種類は複数の選挙を持つ（1 対多）
-- 選挙は複数の投票記録を持つ（1 対多）
-- 候補者は複数の投票記録を持つ（1 対多）
+- 選挙種類は複数の投票記録を持つ（1 対多）
+- 候補者マスタは参考情報として維持し、投票記録は候補者名を直接保持
 - 政党は複数の候補者を持つ（1 対多）

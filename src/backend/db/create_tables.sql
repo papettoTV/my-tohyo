@@ -20,15 +20,6 @@ CREATE TABLE ELECTION_TYPE (
   name VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE ELECTION (
-  election_id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  date DATE NOT NULL,
-  election_type_id INTEGER NOT NULL,
-  party_name VARCHAR(100),
-  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE CASCADE
-);
-
 CREATE TABLE PARTY (
   party_id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL
@@ -46,10 +37,14 @@ CREATE TABLE CANDIDATE (
 CREATE TABLE VOTE_RECORD (
   vote_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
-  election_id INTEGER NOT NULL,
   candidate_name VARCHAR(100) NOT NULL,
+  election_name VARCHAR(150) NOT NULL,
+  election_type_id INTEGER NOT NULL,
   vote_date DATE NOT NULL,
+  party_name VARCHAR(100),
   photo_url VARCHAR(255),
+  social_post_url VARCHAR(255),
+  notes TEXT,
   FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (election_id) REFERENCES ELECTION(election_id) ON DELETE CASCADE
+  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE RESTRICT
 );

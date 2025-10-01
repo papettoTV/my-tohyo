@@ -21,7 +21,6 @@ if (existsSync(envLocalPath)) {
 import userRouter from "./routes/user"
 import socialAccountRouter from "./routes/socialAccount"
 import electionTypeRouter from "./routes/electionType"
-import electionRouter from "./routes/election"
 import partyRouter from "./routes/party"
 import candidateRouter from "./routes/candidate"
 import voteRecordRouter from "./routes/voteRecord"
@@ -39,7 +38,6 @@ app.use("/api/users", userRouter)
 app.use("/api/social-accounts", socialAccountRouter)
 app.use("/api/social-image", socialImageRouter)
 app.use("/api/election-types", electionTypeRouter)
-app.use("/api/elections", electionRouter)
 app.use("/api/parties", partyRouter)
 app.use("/api/candidates", candidateRouter)
 app.use("/api/vote-records", voteRecordRouter)
