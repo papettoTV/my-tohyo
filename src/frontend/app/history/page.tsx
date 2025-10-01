@@ -39,6 +39,21 @@ function resolveApiBase(): string {
   )
 }
 
+function formatDisplayDate(value?: string | null): string {
+  if (!value) return "日付不明"
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  try {
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(parsed)
+  } catch {
+    return value
+  }
+}
+
 function SocialImage({
   photoUrl,
   socialUrl,
@@ -250,48 +265,45 @@ export default function HistoryPage() {
                 className="hover:shadow-md transition-shadow"
               >
                 <CardContent className="pt-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {record.vote_date}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-lg mb-1">
-                        {record.candidate_name || "—"}
-                      </h3>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 text-sm text-gray-600">
-                        <div className="flex items-center mb-1 sm:mb-0">
-                          <Vote className="w-4 h-4 mr-1" />
-                          {record.candidate_name || "—"}
-                        </div>
-                        <span className="flex items-center">
-                          <History className="w-4 h-4 mr-1" />
-                          {record.election_name}
-                        </span>
-                        {record.party_name && (
-                          <span className="flex items-center">
-                            <Building className="w-4 h-4 mr-1" />
-                            {record.party_name}
+                  <div className="border-l-4 border-blue-500 pl-4 py-3">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center">
+                          <Vote className="w-4 h-4 mr-2 text-blue-600" />
+                          <span className="font-semibold text-base text-gray-900">
+                            {record.candidate_name?.trim() || "候補者名未登録"}
                           </span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-600">
+                          <History className="w-3 h-3 mr-1" />
+                          {record.election_name}
+                        </div>
+                        {record.party_name && (
+                          <div className="flex items-center text-xs text-gray-600">
+                            <Building className="w-3 h-3 mr-1" />
+                            {record.party_name}
+                          </div>
                         )}
+                        <div className="flex items-center text-xs text-gray-600">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {formatDisplayDate(record.vote_date)}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-4">
-                      <SocialImage
-                        photoUrl={record.photo_url}
-                        socialUrl={record.social_post_url}
-                        className="w-32 h-20 object-cover rounded"
-                      />
-                      <div className="flex flex-col gap-2">
-                        <Link href={`/history/${record.vote_id}`}>
-                          <Button size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            詳細
-                          </Button>
-                        </Link>
+                      <div className="flex items-center gap-4">
+                        <SocialImage
+                          photoUrl={record.photo_url}
+                          socialUrl={record.social_post_url}
+                          className="w-32 h-20 object-cover rounded"
+                        />
+                        <div className="flex flex-col gap-2">
+                          <Link href={`/history/${record.vote_id}`}>
+                            <Button size="sm">
+                              <Eye className="w-4 h-4 mr-2" />
+                              詳細
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
