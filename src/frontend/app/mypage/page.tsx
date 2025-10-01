@@ -57,7 +57,6 @@ export default async function MyPage() {
   const API_BASE = selectApiBase()
 
   let userName = "ユーザー"
-  let userRegion = "地域未設定"
   let userId: number | null = null
 
   try {
@@ -71,7 +70,6 @@ export default async function MyPage() {
       if (res.ok) {
         const user = await res.json()
         userName = user?.name || user?.email || "ユーザー"
-        userRegion = user?.region || "地域未設定"
         userId = typeof user?.user_id === "number" ? user.user_id : null
       }
     }
@@ -137,7 +135,6 @@ export default async function MyPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {userName}さん
               </h1>
-              <p className="text-gray-600">{userRegion}</p>
               <Badge variant="secondary" className="mt-1">
                 投票記録: {voteCount}件
               </Badge>
@@ -198,8 +195,7 @@ export default async function MyPage() {
                 {recentVotes.map((vote) => {
                   const candidateDisplay =
                     vote.candidate_name?.trim() || "候補者名未登録"
-                  const partyDisplay =
-                    vote.party_name?.trim() || "党情報なし"
+                  const partyDisplay = vote.party_name?.trim() || "党情報なし"
                   return (
                     <div
                       key={vote.vote_id}
