@@ -43,6 +43,15 @@ CREATE TABLE MANIFESTO (
   UNIQUE (candidate_name, election_name)
 );
 
+CREATE TABLE ACHIEVEMENT (
+  achievement_id SERIAL PRIMARY KEY,
+  election_name VARCHAR(150) NOT NULL,
+  candidate_name VARCHAR(100) NOT NULL,
+  content_format VARCHAR(20) NOT NULL DEFAULT 'markdown',
+  content TEXT NOT NULL,
+  UNIQUE (candidate_name, election_name)
+);
+
 CREATE TABLE VOTE_RECORD (
   vote_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,

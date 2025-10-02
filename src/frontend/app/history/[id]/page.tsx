@@ -17,9 +17,7 @@ import {
   User,
   Building,
   FileText,
-  ExternalLink,
   Camera,
-  Share2,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -27,6 +25,14 @@ import { format } from "date-fns"
 
 type ManifestoDetail = {
   manifesto_id: number
+  election_name: string
+  candidate_name: string
+  content: string
+  content_format: "markdown" | "html"
+}
+
+type AchievementDetail = {
+  achievement_id: number
   election_name: string
   candidate_name: string
   content: string
@@ -46,6 +52,7 @@ type VoteDetail = {
   party_name?: string | null
   election_type_id?: number | null
   manifesto?: ManifestoDetail | null
+  achievement?: AchievementDetail | null
 }
 
 function escapeHtml(value: string): string {
@@ -165,6 +172,28 @@ export default function HistoryDetailPage() {
     }
     return markdownToHtml(body)
   }, [manifestoContent, manifestoFormat])
+  const manifestoFormatLabel = manifesto
+    ? manifestoFormat === "html"
+      ? "HTML"
+      : "Markdown"
+    : null
+
+  const achievement = vote?.achievement ?? null
+  const achievementContent = achievement?.content ?? ""
+  const achievementFormat = achievement?.content_format ?? "markdown"
+  const achievementHtml = useMemo(() => {
+    const body = achievementContent.trim()
+    if (!body) return null
+    if (achievementFormat === "html") {
+      return body
+    }
+    return markdownToHtml(body)
+  }, [achievementContent, achievementFormat])
+  const achievementFormatLabel = achievement
+    ? achievementFormat === "html"
+      ? "HTML"
+      : "Markdown"
+    : null
 
   useEffect(() => {
     let mounted = true
@@ -469,6 +498,11 @@ export default function HistoryDetailPage() {
                 <CardDescription>候補者の選挙時の公約・政策</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {manifestoFormatLabel && (
+                  <Badge variant="secondary" className="w-fit uppercase">
+                    {manifestoFormatLabel}
+                  </Badge>
+                )}
                 {manifestoHtml ? (
                   <div
                     className="space-y-3 text-sm leading-relaxed text-gray-700"
@@ -491,37 +525,21 @@ export default function HistoryDetailPage() {
                 <CardDescription>当選後の活動実績</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="border-l-4 border-blue-500 pl-3">
-                    <h4 className="font-medium">法案提出</h4>
-                    <p className="text-sm text-gray-600">
-                      中小企業支援法案を共同提出
-                    </p>
-                    <p className="text-xs text-gray-500">2024年11月</p>
+                {achievementFormatLabel && (
+                  <Badge variant="secondary" className="w-fit uppercase">
+                    {achievementFormatLabel}
+                  </Badge>
+                )}
+                {achievementHtml ? (
+                  <div
+                    className="space-y-3 text-sm leading-relaxed text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: achievementHtml }}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+                    登録された実績・活動情報がまだありません。
                   </div>
-                  <div className="border-l-4 border-green-500 pl-3">
-                    <h4 className="font-medium">委員会活動</h4>
-                    <p className="text-sm text-gray-600">
-                      環境委員会で再エネ推進を議論
-                    </p>
-                    <p className="text-xs text-gray-500">2024年12月</p>
-                  </div>
-                  <div className="border-l-4 border-orange-500 pl-3">
-                    <h4 className="font-medium">地域活動</h4>
-                    <p className="text-sm text-gray-600">
-                      子育て支援センター視察
-                    </p>
-                    <p className="text-xs text-gray-500">2024年12月</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full bg-transparent"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  活動詳細を見る
-                </Button>
+                )}
               </CardContent>
             </Card>
           </div>

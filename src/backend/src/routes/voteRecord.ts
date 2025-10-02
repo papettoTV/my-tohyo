@@ -229,7 +229,10 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              et.name AS election_type_name,
              m.manifesto_id,
              m.content AS manifesto_content,
-             m.content_format AS manifesto_content_format
+             m.content_format AS manifesto_content_format,
+             a.achievement_id,
+             a.content AS achievement_content,
+             a.content_format AS achievement_content_format
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
@@ -237,6 +240,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN MANIFESTO m
         ON LOWER(m.candidate_name) = LOWER(vr.candidate_name)
        AND LOWER(m.election_name) = LOWER(vr.election_name)
+      LEFT JOIN ACHIEVEMENT a
+        ON LOWER(a.candidate_name) = LOWER(vr.candidate_name)
+       AND LOWER(a.election_name) = LOWER(vr.election_name)
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
       [id, userId]
@@ -251,6 +257,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       manifesto_id: manifestoId,
       manifesto_content: manifestoContent,
       manifesto_content_format: manifestoContentFormat,
+      achievement_id: achievementId,
+      achievement_content: achievementContent,
+      achievement_content_format: achievementContentFormat,
       ...rest
     } = record
 
@@ -265,9 +274,21 @@ router.get("/:id", authenticateJWT, async (req, res) => {
           }
         : null
 
+    const achievement =
+      achievementId !== null && achievementId !== undefined
+        ? {
+            achievement_id: achievementId,
+            election_name: rest.election_name,
+            candidate_name: rest.candidate_name,
+            content: achievementContent,
+            content_format: achievementContentFormat || "markdown",
+          }
+        : null
+
     return res.json({
       ...rest,
       manifesto,
+      achievement,
     })
   } catch (e) {
     console.error("Failed to fetch vote record:", e)

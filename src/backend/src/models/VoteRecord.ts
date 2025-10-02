@@ -1,5 +1,6 @@
 // 投票履歴
 import { Manifesto } from "./Manifesto"
+import { Achievement } from "./Achievement"
 
 export interface VoteRecord {
   vote_id: number
@@ -13,4 +14,5 @@ export interface VoteRecord {
   notes?: string | null
   party_name?: string | null
   manifesto?: Manifesto | null
+  achievement?: Achievement | null
 }
