@@ -18,6 +18,8 @@ import {
   Building,
   FileText,
   Camera,
+  Clock,
+  ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -172,11 +174,6 @@ export default function HistoryDetailPage() {
     }
     return markdownToHtml(body)
   }, [manifestoContent, manifestoFormat])
-  const manifestoFormatLabel = manifesto
-    ? manifestoFormat === "html"
-      ? "HTML"
-      : "Markdown"
-    : null
 
   const achievement = vote?.achievement ?? null
   const achievementContent = achievement?.content ?? ""
@@ -405,13 +402,12 @@ export default function HistoryDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">投票履歴詳細</h1>
-            <div className="text-sm text-gray-600 mt-1">{voteDateDisplay}</div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6 xl:space-y-0 xl:grid xl:grid-cols-[1.6fr_1fr] xl:items-start xl:gap-6">
           {/* Main Info Card */}
-          <Card>
+          <Card className="order-1">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -426,44 +422,33 @@ export default function HistoryDetailPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Election Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <Vote className="w-5 h-5 text-blue-600 mr-3" />
-                    <div>
-                      <div className="text-gray-600">選挙種類</div>
-                      <div className="font-medium">{electionType}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <User className="w-5 h-5 text-green-600 mr-3" />
-                    <div>
-                      <div className="text-gray-600">候補者名</div>
-                      <div className="font-medium">{candidateName}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <Building className="w-5 h-5 text-purple-600 mr-3" />
-                    <div>
-                      <div className="text-gray-600">所属政党</div>
-                      <div className="font-medium">{partyName}</div>
-                    </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-start">
+                  <Vote className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
+                  <div>
+                    <div className="text-gray-600">選挙種類</div>
+                    <div className="font-medium">{electionType}</div>
                   </div>
                 </div>
-
-                {/* Voting Photo */}
-                <div className="space-y-2">
-                  <div className="font-medium flex items-center">
-                    <Camera className="w-4 h-4 mr-2" />
-                    投票写真（XのURLから取得）
+                <div className="flex items-start">
+                  <User className="w-5 h-5 text-green-600 mr-3 mt-0.5" />
+                  <div>
+                    <div className="text-gray-600">候補者名</div>
+                    <div className="font-medium">{candidateName}</div>
                   </div>
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={displayImageUrl}
-                      alt="投票写真"
-                      className="w-full h-48 object-cover rounded"
-                    />
+                </div>
+                <div className="flex items-start">
+                  <Building className="w-5 h-5 text-purple-600 mr-3 mt-0.5" />
+                  <div>
+                    <div className="text-gray-600">所属政党</div>
+                    <div className="font-medium">{partyName}</div>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <Clock className="w-5 h-5 text-orange-500 mr-3 mt-0.5" />
+                  <div>
+                    <div className="text-gray-600">投票日時</div>
+                    <div className="font-medium">{voteDateDisplay}</div>
                   </div>
                 </div>
               </div>
@@ -481,36 +466,8 @@ export default function HistoryDetailPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Manifesto & Performance (static placeholders) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
-                  マニフェスト
-                </CardTitle>
-                <CardDescription>候補者の選挙時の公約・政策</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {manifestoFormatLabel && (
-                  <Badge variant="secondary" className="w-fit uppercase">
-                    {manifestoFormatLabel}
-                  </Badge>
-                )}
-                {manifestoHtml ? (
-                  <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
-                    dangerouslySetInnerHTML={{ __html: manifestoHtml }}
-                  />
-                ) : (
-                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
-                    登録されたマニフェスト情報がまだありません。
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
+          <div className="order-2 space-y-6">
+            {/* Achievements */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -532,7 +489,75 @@ export default function HistoryDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Manifesto */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  マニフェスト
+                </CardTitle>
+                <CardDescription>候補者の選挙時の公約・政策</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {manifestoHtml ? (
+                  <div
+                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                    dangerouslySetInnerHTML={{ __html: manifestoHtml }}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+                    登録されたマニフェスト情報がまだありません。
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-base">
+                <Camera className="w-5 h-5 mr-2" />
+                投票写真
+              </CardTitle>
+              <CardDescription>投稿から取得した写真をここで確認できます。</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="overflow-hidden rounded-lg border bg-gray-50">
+                {imageLoading ? (
+                  <div className="flex h-40 items-center justify-center text-sm text-gray-500">
+                    画像を読み込んでいます...
+                  </div>
+                ) : resolvedImageUrl || socialPostUrlRaw ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={displayImageUrl}
+                      alt="投票写真"
+                      className="h-40 w-full object-cover"
+                    />
+                  </>
+                ) : (
+                  <div className="flex h-40 items-center justify-center text-sm text-gray-500">
+                    取得できる写真がありません。
+                  </div>
+                )}
+              </div>
+              {socialPostUrlRaw && (
+                <a
+                  href={socialPostUrlRaw}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  X の投稿を開く
+                </a>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
