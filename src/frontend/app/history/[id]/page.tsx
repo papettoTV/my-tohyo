@@ -82,7 +82,8 @@ export default function HistoryDetailPage() {
 
     const url = `${base}/api/vote-records/${resolvedId}`
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
     if (!token) {
       if (mounted) {
         setError("認証情報が見つかりません")
@@ -135,7 +136,8 @@ export default function HistoryDetailPage() {
     let alive = true
     setImageLoading(true)
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
     if (!token) {
       setResolvedImageUrl(null)
       setImageLoading(false)
@@ -283,7 +285,7 @@ export default function HistoryDetailPage() {
                   <CardTitle className="text-xl">{electionTitle}</CardTitle>
                   <CardDescription className="flex items-center mt-2">
                     <Calendar className="w-4 h-4 mr-2" />
-                    {electionDateDisplay} ({electionType})
+                    {electionDateDisplay}
                   </CardDescription>
                 </div>
                 <Badge className="bg-green-100 text-green-800">記録</Badge>
@@ -296,22 +298,22 @@ export default function HistoryDetailPage() {
                   <div className="flex items-center">
                     <Vote className="w-5 h-5 text-blue-600 mr-3" />
                     <div>
-                      <div className="font-medium">選挙種類</div>
-                      <div className="text-gray-600">{electionType}</div>
+                      <div className="text-gray-600">選挙種類</div>
+                      <div className="font-medium">{electionType}</div>
                     </div>
                   </div>
                   <div className="flex items-center">
                     <User className="w-5 h-5 text-green-600 mr-3" />
                     <div>
-                      <div className="font-medium">候補者名</div>
-                      <div className="text-gray-600">{candidateName}</div>
+                      <div className="text-gray-600">候補者名</div>
+                      <div className="font-medium">{candidateName}</div>
                     </div>
                   </div>
                   <div className="flex items-center">
                     <Building className="w-5 h-5 text-purple-600 mr-3" />
                     <div>
-                      <div className="font-medium">所属政党</div>
-                      <div className="text-gray-600">{partyName}</div>
+                      <div className="text-gray-600">所属政党</div>
+                      <div className="font-medium">{partyName}</div>
                     </div>
                   </div>
                 </div>
@@ -320,7 +322,7 @@ export default function HistoryDetailPage() {
                 <div className="space-y-2">
                   <div className="font-medium flex items-center">
                     <Camera className="w-4 h-4 mr-2" />
-                    投票写真
+                    投票写真（XのURLから取得）
                   </div>
                   <div className="border rounded-lg p-4 bg-gray-50">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -329,12 +331,6 @@ export default function HistoryDetailPage() {
                       alt="投票写真"
                       className="w-full h-48 object-cover rounded"
                     />
-                    <div className="mt-2 flex gap-2">
-                      <Button size="sm" variant="outline">
-                        <Share2 className="w-4 h-4 mr-2" />
-                        シェア
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
