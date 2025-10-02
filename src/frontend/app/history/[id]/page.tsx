@@ -189,11 +189,6 @@ export default function HistoryDetailPage() {
     }
     return markdownToHtml(body)
   }, [achievementContent, achievementFormat])
-  const achievementFormatLabel = achievement
-    ? achievementFormat === "html"
-      ? "HTML"
-      : "Markdown"
-    : null
 
   useEffect(() => {
     let mounted = true
@@ -505,7 +500,7 @@ export default function HistoryDetailPage() {
                 )}
                 {manifestoHtml ? (
                   <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700"
+                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
                     dangerouslySetInnerHTML={{ __html: manifestoHtml }}
                   />
                 ) : (
@@ -525,14 +520,9 @@ export default function HistoryDetailPage() {
                 <CardDescription>当選後の活動実績</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {achievementFormatLabel && (
-                  <Badge variant="secondary" className="w-fit uppercase">
-                    {achievementFormatLabel}
-                  </Badge>
-                )}
                 {achievementHtml ? (
                   <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700"
+                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
                     dangerouslySetInnerHTML={{ __html: achievementHtml }}
                   />
                 ) : (
