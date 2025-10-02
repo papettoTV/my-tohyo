@@ -1,4 +1,6 @@
 // 投票履歴
+import { Manifesto } from "./Manifesto"
+
 export interface VoteRecord {
   vote_id: number
   user_id: number
@@ -10,4 +12,5 @@ export interface VoteRecord {
   social_post_url?: string | null
   notes?: string | null
   party_name?: string | null
+  manifesto?: Manifesto | null
 }

@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -25,6 +25,14 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
 
+type ManifestoDetail = {
+  manifesto_id: number
+  election_name: string
+  candidate_name: string
+  content: string
+  content_format: "markdown" | "html"
+}
+
 type VoteDetail = {
   vote_id: number
   user_id: number
@@ -37,6 +45,95 @@ type VoteDetail = {
   party_id?: number | null
   party_name?: string | null
   election_type_id?: number | null
+  manifesto?: ManifestoDetail | null
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+function applyInlineFormatting(input: string): string {
+  let formatted = escapeHtml(input)
+
+  formatted = formatted.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>'
+  )
+  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+  formatted = formatted.replace(/\*([^*]+)\*/g, "<em>$1</em>")
+  formatted = formatted.replace(/`([^`]+)`/g, "<code>$1</code>")
+
+  return formatted
+}
+
+function markdownToHtml(markdown: string): string {
+  const normalized = markdown.replace(/\r\n/g, "\n")
+  const lines = normalized.split(/\n/)
+  const chunks: string[] = []
+  let inList = false
+  let paragraphBuffer: string[] = []
+
+  const flushParagraph = () => {
+    if (paragraphBuffer.length === 0) return
+    const paragraph = paragraphBuffer.join("<br />")
+    chunks.push(`<p>${applyInlineFormatting(paragraph)}</p>`)
+    paragraphBuffer = []
+  }
+
+  const closeList = () => {
+    if (inList) {
+      chunks.push("</ul>")
+      inList = false
+    }
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd()
+
+    if (line.trim() === "") {
+      flushParagraph()
+      closeList()
+      continue
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/)
+    if (headingMatch) {
+      flushParagraph()
+      closeList()
+      const level = Math.min(headingMatch[1].length, 6)
+      const content = applyInlineFormatting(headingMatch[2].trim())
+      chunks.push(`<h${level}>${content}</h${level}>`)
+      continue
+    }
+
+    const listMatch = line.match(/^\s*[-*+]\s+(.*)$/)
+    if (listMatch) {
+      flushParagraph()
+      if (!inList) {
+        chunks.push("<ul>")
+        inList = true
+      }
+      const itemContent = applyInlineFormatting(listMatch[1].trim())
+      chunks.push(`<li>${itemContent}</li>`)
+      continue
+    }
+
+    paragraphBuffer.push(line.trim())
+  }
+
+  flushParagraph()
+  closeList()
+
+  if (chunks.length === 0) {
+    return `<p>${applyInlineFormatting(markdown)}</p>`
+  }
+
+  return chunks.join("\n")
 }
 
 function resolveApiBase(): string {
@@ -56,6 +153,18 @@ export default function HistoryDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null)
   const [imageLoading, setImageLoading] = useState<boolean>(false)
+
+  const manifesto = vote?.manifesto ?? null
+  const manifestoContent = manifesto?.content ?? ""
+  const manifestoFormat = manifesto?.content_format ?? "markdown"
+  const manifestoHtml = useMemo(() => {
+    const body = manifestoContent.trim()
+    if (!body) return null
+    if (manifestoFormat === "html") {
+      return body
+    }
+    return markdownToHtml(body)
+  }, [manifestoContent, manifestoFormat])
 
   useEffect(() => {
     let mounted = true
@@ -360,34 +469,16 @@ export default function HistoryDetailPage() {
                 <CardDescription>候補者の選挙時の公約・政策</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="border-l-4 border-blue-500 pl-3">
-                    <h4 className="font-medium">経済政策</h4>
-                    <p className="text-sm text-gray-600">
-                      中小企業支援と雇用創出
-                    </p>
+                {manifestoHtml ? (
+                  <div
+                    className="space-y-3 text-sm leading-relaxed text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: manifestoHtml }}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+                    登録されたマニフェスト情報がまだありません。
                   </div>
-                  <div className="border-l-4 border-green-500 pl-3">
-                    <h4 className="font-medium">環境政策</h4>
-                    <p className="text-sm text-gray-600">
-                      再生可能エネルギー推進
-                    </p>
-                  </div>
-                  <div className="border-l-4 border-orange-500 pl-3">
-                    <h4 className="font-medium">社会保障</h4>
-                    <p className="text-sm text-gray-600">子育て支援の充実</p>
-                  </div>
-                </div>
-                <Link href="/manifesto/1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full bg-transparent"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    詳細を見る
-                  </Button>
-                </Link>
+                )}
               </CardContent>
             </Card>
 

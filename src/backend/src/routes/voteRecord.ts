@@ -226,11 +226,17 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              vr.notes,
              COALESCE(vr.party_name, p.name) AS party_name,
              c.party_id,
-             et.name AS election_type_name
+             et.name AS election_type_name,
+             m.manifesto_id,
+             m.content AS manifesto_content,
+             m.content_format AS manifesto_content_format
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
+      LEFT JOIN MANIFESTO m
+        ON LOWER(m.candidate_name) = LOWER(vr.candidate_name)
+       AND LOWER(m.election_name) = LOWER(vr.election_name)
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
       [id, userId]
@@ -240,7 +246,29 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       return res.status(404).json({ message: "Vote record not found" })
     }
 
-    return res.json(rows[0])
+    const [record] = rows
+    const {
+      manifesto_id: manifestoId,
+      manifesto_content: manifestoContent,
+      manifesto_content_format: manifestoContentFormat,
+      ...rest
+    } = record
+
+    const manifesto =
+      manifestoId !== null && manifestoId !== undefined
+        ? {
+            manifesto_id: manifestoId,
+            election_name: rest.election_name,
+            candidate_name: rest.candidate_name,
+            content: manifestoContent,
+            content_format: manifestoContentFormat || "markdown",
+          }
+        : null
+
+    return res.json({
+      ...rest,
+      manifesto,
+    })
   } catch (e) {
     console.error("Failed to fetch vote record:", e)
     return res.status(500).json({ message: "Internal server error" })

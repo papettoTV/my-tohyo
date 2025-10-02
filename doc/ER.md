@@ -30,6 +30,13 @@ erDiagram
         string manifesto_url "マニフェストURL"
         string achievements "実績情報"
     }
+    MANIFESTO {
+        int manifesto_id PK "マニフェストID"
+        string election_name "選挙名"
+        string candidate_name "候補者名"
+        string content_format "形式 (markdown/html)"
+        text content "マニフェスト本文"
+    }
     VOTE_RECORD {
         int vote_id PK "投票記録ID"
         int user_id FK "ユーザーID"
@@ -48,6 +55,7 @@ erDiagram
     ELECTION_TYPE ||--o{ VOTE_RECORD : "分類"
     CANDIDATE ||--o{ VOTE_RECORD : "参考"
     PARTY ||--o{ CANDIDATE : "所属"
+    VOTE_RECORD }o--|| MANIFESTO : "候補者と選挙で参照"
 ```
 
 ## エンティティ説明
@@ -72,6 +80,10 @@ erDiagram
 
   - 候補者 ID（主キー）、氏名、所属政党（外部キー）、マニフェスト URL、実績情報
 
+- **MANIFESTO（マニフェスト）**
+
+  - マニフェスト ID（主キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文。選挙名と候補者名の組み合わせで一意
+
 - **VOTE_RECORD（投票記録）**
   - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名、選挙名、選挙種類 ID（外部キー）、投票日、政党名、投票写真 URL、SNS 投稿 URL、メモ
 
@@ -82,3 +94,4 @@ erDiagram
 - 選挙種類は複数の投票記録を持つ（1 対多）
 - 候補者マスタは参考情報として維持し、投票記録は候補者名を直接保持
 - 政党は複数の候補者を持つ（1 対多）
+- 投票記録は候補者名と選挙名の組み合わせでマニフェストに紐づけられる（概念レベルのリレーション）

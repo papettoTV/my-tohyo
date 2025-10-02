@@ -34,6 +34,15 @@ CREATE TABLE CANDIDATE (
   FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
 );
 
+CREATE TABLE MANIFESTO (
+  manifesto_id SERIAL PRIMARY KEY,
+  election_name VARCHAR(150) NOT NULL,
+  candidate_name VARCHAR(100) NOT NULL,
+  content_format VARCHAR(20) NOT NULL DEFAULT 'markdown',
+  content TEXT NOT NULL,
+  UNIQUE (candidate_name, election_name)
+);
+
 CREATE TABLE VOTE_RECORD (
   vote_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,

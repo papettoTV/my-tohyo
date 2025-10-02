@@ -78,6 +78,27 @@ const swaggerDefinition: SwaggerDefinition = {
           "achievements",
         ],
       },
+      Manifesto: {
+        type: "object",
+        properties: {
+          manifesto_id: { type: "integer", description: "マニフェストID" },
+          election_name: { type: "string", description: "選挙名" },
+          candidate_name: { type: "string", description: "候補者名" },
+          content_format: {
+            type: "string",
+            enum: ["markdown", "html"],
+            description: "マニフェスト本文の形式",
+          },
+          content: { type: "string", description: "マニフェスト本文" },
+        },
+        required: [
+          "manifesto_id",
+          "election_name",
+          "candidate_name",
+          "content_format",
+          "content",
+        ],
+      },
       VoteRecord: {
         type: "object",
         properties: {
@@ -91,6 +112,10 @@ const swaggerDefinition: SwaggerDefinition = {
           party_name: { type: "string", description: "政党名" },
           social_post_url: { type: "string", description: "SNS投稿URL" },
           notes: { type: "string", description: "投票メモ" },
+          manifesto: {
+            $ref: "#/components/schemas/Manifesto",
+            description: "投票記録と紐づくマニフェスト情報（存在しない場合はnull）",
+          },
         },
         required: [
           "vote_id",
