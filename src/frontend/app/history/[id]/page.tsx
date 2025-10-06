@@ -417,7 +417,6 @@ export default function HistoryDetailPage() {
                     {electionDateDisplay}
                   </CardDescription>
                 </div>
-                <Badge className="bg-green-100 text-green-800">記録</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -522,7 +521,9 @@ export default function HistoryDetailPage() {
                 <Camera className="w-5 h-5 mr-2" />
                 投票写真
               </CardTitle>
-              <CardDescription>投稿から取得した写真をここで確認できます。</CardDescription>
+              <CardDescription>
+                投稿から取得した写真をここで確認できます。
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="overflow-hidden rounded-lg border bg-gray-50">
@@ -552,8 +553,7 @@ export default function HistoryDetailPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
                 >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  X の投稿を開く
+                  <ExternalLink className="mr-2 h-4 w-4" />X の投稿を開く
                 </a>
               )}
             </CardContent>
