@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -20,10 +21,20 @@ import {
   Camera,
   Clock,
   ExternalLink,
+  Sparkles,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 type ManifestoDetail = {
   manifesto_id: number
@@ -187,6 +198,20 @@ export default function HistoryDetailPage() {
     return markdownToHtml(body)
   }, [achievementContent, achievementFormat])
 
+  const [autoGenerating, setAutoGenerating] = useState(false)
+  const [savingGenerated, setSavingGenerated] = useState(false)
+  const [generatedManifesto, setGeneratedManifesto] = useState<string | null>(
+    null
+  )
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [autoError, setAutoError] = useState<string | null>(null)
+
+  const generatedManifestoHtml = useMemo(() => {
+    const body = generatedManifesto?.trim()
+    if (!body) return null
+    return markdownToHtml(body)
+  }, [generatedManifesto])
+
   useEffect(() => {
     let mounted = true
     const base = resolveApiBase()
@@ -308,6 +333,179 @@ export default function HistoryDetailPage() {
       alive = false
     }
   }, [vote?.social_post_url])
+
+  const handleAutoGenerateClick = useCallback(async () => {
+    if (!vote || autoGenerating || savingGenerated) return
+
+    const candidate = vote.candidate_name?.trim() || ""
+    const election = vote.election_name?.trim() || ""
+
+    if (!candidate || !election) {
+      setAutoError("候補者名または選挙名が不足しているため自動生成できません。")
+      return
+    }
+
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+    if (!token) {
+      setAutoError("認証情報が見つからないため自動生成を実行できません。")
+      return
+    }
+
+    setAutoError(null)
+    setAutoGenerating(true)
+
+    try {
+      const base = resolveApiBase()
+      const response = await fetch(`${base}/api/manifestos/auto-generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          candidate_name: candidate,
+          election_name: election,
+          election_type_name: vote.election_type_name,
+          achievement_content: achievementContent || null,
+          notes: vote.notes || null,
+          existing_manifesto: manifestoContent || null,
+        }),
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        let message = "マニフェストの自動生成に失敗しました"
+        try {
+          const payload = JSON.parse(text)
+          if (payload?.message) message = payload.message
+        } catch (error) {
+          // ignore JSON parse error
+        }
+        throw new Error(message)
+      }
+
+      const data = (await response.json()) as { content?: string }
+      const content = data?.content?.trim()
+      if (!content) {
+        throw new Error("生成された内容が空でした。")
+      }
+
+      setGeneratedManifesto(content)
+      setPreviewOpen(true)
+    } catch (err) {
+      console.error("Failed to auto-generate manifesto:", err)
+      setGeneratedManifesto(null)
+      setPreviewOpen(false)
+      setAutoError(
+        err instanceof Error
+          ? err.message
+          : "マニフェストの自動生成に失敗しました"
+      )
+    } finally {
+      setAutoGenerating(false)
+    }
+  }, [
+    achievementContent,
+    autoGenerating,
+    manifestoContent,
+    savingGenerated,
+    vote,
+  ])
+
+  const handleCancelPreview = useCallback(() => {
+    setPreviewOpen(false)
+    setGeneratedManifesto(null)
+  }, [])
+
+  const handleRegisterGenerated = useCallback(async () => {
+    if (!vote || !generatedManifesto || savingGenerated) {
+      setPreviewOpen(false)
+      return
+    }
+
+    const candidate = vote.candidate_name?.trim() || ""
+    const election = vote.election_name?.trim() || ""
+
+    if (!candidate || !election) {
+      setAutoError("候補者名または選挙名が不足しているため登録できません。")
+      setPreviewOpen(false)
+      return
+    }
+
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+    if (!token) {
+      setAutoError("認証情報が見つからないため登録できません。")
+      setPreviewOpen(false)
+      return
+    }
+
+    const contentToSave = generatedManifesto
+
+    setSavingGenerated(true)
+    setPreviewOpen(false)
+
+    try {
+      const base = resolveApiBase()
+      const response = await fetch(`${base}/api/manifestos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          candidate_name: candidate,
+          election_name: election,
+          content: contentToSave,
+          content_format: "markdown",
+        }),
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        let message = "マニフェストの登録に失敗しました"
+        try {
+          const payload = JSON.parse(text)
+          if (payload?.message) message = payload.message
+        } catch (error) {
+          // ignore parse error
+        }
+        throw new Error(message)
+      }
+
+      const data = (await response.json()) as {
+        manifesto_id?: number
+        content?: string
+        content_format?: string
+      }
+
+      const updatedManifesto = {
+        manifesto_id: data?.manifesto_id ?? vote.manifesto?.manifesto_id ?? 0,
+        election_name: vote.election_name || election,
+        candidate_name: vote.candidate_name || candidate,
+        content: data?.content ?? contentToSave,
+        content_format:
+          (data?.content_format as "markdown" | "html") ?? "markdown",
+      }
+
+      setVote((prev) => (prev ? { ...prev, manifesto: updatedManifesto } : prev))
+      setGeneratedManifesto(null)
+      setAutoError(null)
+    } catch (err) {
+      console.error("Failed to register generated manifesto:", err)
+      setGeneratedManifesto(null)
+      setAutoError(
+        err instanceof Error
+          ? err.message
+          : "マニフェストの登録に失敗しました"
+      )
+    } finally {
+      setSavingGenerated(false)
+    }
+  }, [generatedManifesto, savingGenerated, vote])
 
   // loading state
   if (vote === undefined) {
@@ -510,6 +708,27 @@ export default function HistoryDetailPage() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="flex flex-col items-stretch gap-2 pt-0 sm:flex-row sm:items-center sm:justify-end">
+                {autoError && (
+                  <p className="text-sm text-red-600 sm:mr-2 sm:max-w-sm">
+                    {autoError}
+                  </p>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoGenerateClick}
+                  disabled={autoGenerating || savingGenerated}
+                  className="justify-center sm:min-w-[140px]"
+                >
+                  {autoGenerating || savingGenerated ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  自動登録
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>
@@ -559,6 +778,53 @@ export default function HistoryDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Dialog
+          open={previewOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleCancelPreview()
+            }
+          }}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>自動生成されたマニフェスト</DialogTitle>
+              <DialogDescription>
+                内容を確認し、登録するかキャンセルしてください。
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[60vh] overflow-y-auto space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700">
+              {generatedManifestoHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: generatedManifestoHtml }} />
+              ) : (
+                <p className="text-gray-500">生成された内容が見つかりませんでした。</p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCancelPreview}
+                disabled={savingGenerated}
+              >
+                キャンセル
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRegisterGenerated}
+                disabled={savingGenerated || !generatedManifesto}
+              >
+                {savingGenerated ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                この内容を登録
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

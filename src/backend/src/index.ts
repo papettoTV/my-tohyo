@@ -25,6 +25,7 @@ import partyRouter from "./routes/party"
 import candidateRouter from "./routes/candidate"
 import voteRecordRouter from "./routes/voteRecord"
 import socialImageRouter from "./routes/socialImage"
+import manifestoRouter from "./routes/manifesto"
 
 import swaggerJSDoc from "swagger-jsdoc"
 import swaggerUi from "swagger-ui-express"
@@ -41,6 +42,7 @@ app.use("/api/election-types", electionTypeRouter)
 app.use("/api/parties", partyRouter)
 app.use("/api/candidates", candidateRouter)
 app.use("/api/vote-records", voteRecordRouter)
+app.use("/api/manifestos", manifestoRouter)
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" })
