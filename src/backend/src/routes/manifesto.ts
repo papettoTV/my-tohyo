@@ -1,4 +1,5 @@
 import { Router } from "express"
+import OpenAI from "openai"
 
 import { authenticateJWT } from "../middleware/auth"
 import { getDataSource } from "../data-source"
@@ -12,6 +13,10 @@ type AutoGenerateBody = {
   achievement_content?: string | null
   notes?: string | null
   existing_manifesto?: string | null
+  election_year?: string | number | null
+  election_district?: string | null
+  party_name?: string | null
+  source_urls?: string[] | null
 }
 
 // POST /api/manifestos/auto-generate
@@ -20,10 +25,10 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
     const {
       candidate_name,
       election_name,
-      election_type_name,
-      achievement_content,
-      notes,
-      existing_manifesto,
+      election_year,
+      election_district,
+      party_name,
+      source_urls,
     } = req.body as AutoGenerateBody
 
     const candidate = candidate_name?.trim()
@@ -44,62 +49,90 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
         .json({ message: "OpenAI API key が設定されていません" })
     }
 
-    const contextSections: string[] = []
-    contextSections.push(`候補者: ${candidate}`)
-    contextSections.push(`選挙: ${election}`)
-    if (election_type_name?.trim()) {
-      contextSections.push(`選挙の種類: ${election_type_name.trim()}`)
-    }
-    if (achievement_content?.trim()) {
-      contextSections.push(`既存の実績・活動:\n${achievement_content.trim()}`)
-    }
-    if (notes?.trim()) {
-      contextSections.push(`投票メモ:\n${notes.trim()}`)
-    }
-    if (existing_manifesto?.trim()) {
-      contextSections.push(`既存のマニフェスト:\n${existing_manifesto.trim()}`)
+    const sanitize = (
+      value?: string | number | null,
+      fallback = "情報未提供"
+    ) => {
+      if (value === undefined || value === null) return fallback
+      const trimmed = String(value).trim()
+      return trimmed === "" ? fallback : trimmed
     }
 
-    const systemPrompt =
-      "あなたは日本の地方選挙に詳しい政策ライターです。候補者のマニフェスト案を分かりやすい日本語でMarkdown形式 (見出しと箇条書き中心) で作成してください。極端な表現や事実不明な内容は避け、与えられた情報を基に現実的で実行可能な政策を提案してください。"
+    const derivedYear = (() => {
+      const yearFromRequest = sanitize(election_year, "")
+      if (yearFromRequest) return yearFromRequest
+      const match = election?.match(/(20\d{2})/)
+      if (match) return match[1]
+      return "2025"
+    })()
 
-    const userPrompt = `${contextSections.join(
-      "\n\n"
-    )}\n\n求める出力:\n- Markdownで書かれたマニフェスト案\n- 見出し、箇条書きを使って整理\n- 実現手段や期待効果を簡潔に記載`
+    const derivedDistrict = sanitize(election_district, "不明")
+    const derivedParty = sanitize(party_name, "無所属")
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        temperature: 0.7,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 700,
-      }),
+    const sourceArray = Array.isArray(source_urls) ? source_urls : []
+
+    const source1 = sanitize(sourceArray[0], "{{URL1}}")
+    const source2 = sanitize(sourceArray[1], "{{URL2}}")
+    const source3 = sanitize(sourceArray[2], "{{URL3}}")
+
+    const today = new Date().toISOString().slice(0, 10)
+
+    const userPrompt = `役割: あなたは中立な編集者です。以下の「検証済み事実情報」だけを根拠に、${derivedYear}年参院選 ${derivedDistrict}選挙区に出馬の「${candidate}」のマニフェストを、シンプルなリストHTMLのみで作成してください。
+
+出力制約:
+- <ul>/<ol>/<li>のみ使用（必要に応じ<a>, <time>, <q>可）。見出しタグや<p>、スタイル、コメントは使わない。
+- 事実情報に無い記述は禁止。不足は「情報未提供」と明記。
+- 数値・固有名詞は出典と一致する場合のみ。
+- 引用は短く<q>で可（出典URL・日付を併記）。
+
+検証済み事実情報:
+- 選挙名: ${sanitize(election, "第27回参議院議員通常選挙")}
+- 年: ${derivedYear}
+- 選挙区: ${derivedDistrict}
+- 候補者: ${candidate}
+- 所属: ${derivedParty}
+
+出力構成（この順番・入れ子を厳守）:
+<ul>
+  <li>■要約：<ul><li><!-- 3〜5行 --></li></ul></li>
+  <li>■公約：<ul><!-- 最大7項目 --></ul></li>
+  <li>■具体策：
+    <ul>
+      <li>経済・物価：<ul><!-- 箇条書き --></ul></li>
+      <li>子育て・教育：<ul><!-- 箇条書き --></ul></li>
+      <li>社会保障：<ul><!-- 箇条書き --></ul></li>
+      <li>地域・生活：<ul><!-- 箇条書き --></ul></li>
+      <li>行政・政治改革：<ul><!-- 箇条書き --></ul></li>
+    </ul>
+  </li>
+  <li>■財源・実施スケジュール：{{情報未提供 も可}}</li>
+  <li>■実績・背景：<ul><!-- 事実のみ --></ul></li>
+  <li>■論点・留意事項（中立）：<ul><li><!-- 1〜3点 --></li></ul></li>
+  <li>■出典：
+    <ol>
+      <li><a href="${source1}" target="_blank" rel="noopener">公式/報道1</a></li>
+      <li><a href="${source2}" target="_blank" rel="noopener">公式/報道2</a></li>
+      <li><a href="${source3}" target="_blank" rel="noopener">公式/報道3</a></li>
+    </ol>
+  </li>
+  <li>最終更新：<time datetime="${today}">${today}</time></li>
+</ul>`
+
+    console.log("userPrompt", userPrompt)
+
+    const client = new OpenAI({ apiKey })
+
+    const response = await client.responses.create({
+      model: "gpt-5",
+      input: userPrompt,
     })
 
-    if (!response.ok) {
-      const text = await response.text()
-      console.error("[manifestos/auto-generate] upstream error:", text)
-      return res
-        .status(502)
-        .json({ message: "ChatGPT API 呼び出しに失敗しました" })
-    }
-
-    const completion = (await response.json()) as any
-    const content: string | undefined =
-      completion?.choices?.[0]?.message?.content?.trim()
+    const content = response.output_text?.trim()
 
     if (!content) {
       console.error(
         "[manifestos/auto-generate] unexpected API response:",
-        JSON.stringify(completion, null, 2)
+        JSON.stringify(response, null, 2)
       )
       return res.status(502).json({ message: "生成結果を取得できませんでした" })
     }
@@ -127,7 +160,7 @@ router.post("/", authenticateJWT, async (req, res) => {
     const candidate = candidate_name?.trim()
     const election = election_name?.trim()
     const body = content?.trim()
-    const format = (content_format || "markdown").trim().toLowerCase()
+    const format = (content_format || "html").trim().toLowerCase()
 
     if (!candidate || !election || !body) {
       return res.status(400).json({ message: "必須項目が不足しています" })

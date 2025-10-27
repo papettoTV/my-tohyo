@@ -209,6 +209,12 @@ export default function HistoryDetailPage() {
   const generatedManifestoHtml = useMemo(() => {
     const body = generatedManifesto?.trim()
     if (!body) return null
+
+    const seemsHtml = /^\s*</.test(body) && /<\/?[a-z][^>]*>/i.test(body)
+    if (seemsHtml) {
+      return body
+    }
+
     return markdownToHtml(body)
   }, [generatedManifesto])
 
@@ -460,7 +466,7 @@ export default function HistoryDetailPage() {
           candidate_name: candidate,
           election_name: election,
           content: contentToSave,
-          content_format: "markdown",
+          content_format: "html",
         }),
       })
 
@@ -487,20 +493,19 @@ export default function HistoryDetailPage() {
         election_name: vote.election_name || election,
         candidate_name: vote.candidate_name || candidate,
         content: data?.content ?? contentToSave,
-        content_format:
-          (data?.content_format as "markdown" | "html") ?? "markdown",
+        content_format: (data?.content_format as "markdown" | "html") ?? "html",
       }
 
-      setVote((prev) => (prev ? { ...prev, manifesto: updatedManifesto } : prev))
+      setVote((prev) =>
+        prev ? { ...prev, manifesto: updatedManifesto } : prev
+      )
       setGeneratedManifesto(null)
       setAutoError(null)
     } catch (err) {
       console.error("Failed to register generated manifesto:", err)
       setGeneratedManifesto(null)
       setAutoError(
-        err instanceof Error
-          ? err.message
-          : "マニフェストの登録に失敗しました"
+        err instanceof Error ? err.message : "マニフェストの登録に失敗しました"
       )
     } finally {
       setSavingGenerated(false)
@@ -726,7 +731,7 @@ export default function HistoryDetailPage() {
                   ) : (
                     <Sparkles className="mr-2 h-4 w-4" />
                   )}
-                  自動登録
+                  自動更新
                 </Button>
               </CardFooter>
             </Card>
@@ -797,9 +802,13 @@ export default function HistoryDetailPage() {
 
             <div className="max-h-[60vh] overflow-y-auto space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700">
               {generatedManifestoHtml ? (
-                <div dangerouslySetInnerHTML={{ __html: generatedManifestoHtml }} />
+                <div
+                  dangerouslySetInnerHTML={{ __html: generatedManifestoHtml }}
+                />
               ) : (
-                <p className="text-gray-500">生成された内容が見つかりませんでした。</p>
+                <p className="text-gray-500">
+                  生成された内容が見つかりませんでした。
+                </p>
               )}
             </div>
 
