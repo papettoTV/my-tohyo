@@ -1,0 +1,1 @@
+node --env-file=../backend/.env.local prompt_action_websearch_sample.mjs

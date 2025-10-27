@@ -1,0 +1,1 @@
+node --env-file=../backend/.env.local prompt_manifest_sample.mjs
