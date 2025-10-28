@@ -32,6 +32,7 @@ erDiagram
     }
     MANIFESTO {
         int manifesto_id PK "マニフェストID"
+        int candidate_id FK "候補者ID"
         string election_name "選挙名"
         string candidate_name "候補者名"
         string content_format "形式 (markdown/html)"
@@ -61,8 +62,8 @@ erDiagram
     USER ||--o{ VOTE_RECORD : "投票"
     ELECTION_TYPE ||--o{ VOTE_RECORD : "分類"
     CANDIDATE ||--o{ VOTE_RECORD : "参考"
+    CANDIDATE ||--o{ MANIFESTO : "公約"
     PARTY ||--o{ CANDIDATE : "所属"
-    VOTE_RECORD }o--|| MANIFESTO : "候補者と選挙で参照"
     VOTE_RECORD }o--|| ACHIEVEMENT : "候補者と選挙で参照"
 ```
 
@@ -86,11 +87,11 @@ erDiagram
 
 - **CANDIDATE（候補者）**
 
-  - 候補者 ID（主キー）、氏名、所属政党（外部キー）、マニフェスト URL、実績情報
+  - 候補者 ID（主キー）、氏名、所属政党（外部キー・任意）、マニフェスト URL、実績情報
 
 - **MANIFESTO（マニフェスト）**
 
-  - マニフェスト ID（主キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文。選挙名と候補者名の組み合わせで一意
+  - マニフェスト ID（主キー）、候補者 ID（外部キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文。候補者 ID と選挙名の組み合わせで一意
 
 - **ACHIEVEMENT（実績・活動）**
 
@@ -106,5 +107,5 @@ erDiagram
 - 選挙種類は複数の投票記録を持つ（1 対多）
 - 候補者マスタは参考情報として維持し、投票記録は候補者名を直接保持
 - 政党は複数の候補者を持つ（1 対多）
-- 投票記録は候補者名と選挙名の組み合わせでマニフェストに紐づけられる（概念レベルのリレーション）
+- マニフェストは候補者マスタ（CANDIDATE）と紐づき、候補者 ID と選挙名で一意に管理される
 - 投票記録は候補者名と選挙名の組み合わせで実績・活動情報に紐づけられる（概念レベルのリレーション）

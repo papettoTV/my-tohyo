@@ -44,6 +44,7 @@ router.get("/", authenticateJWT, async (req, res) => {
              vr.election_type_id,
              vr.notes,
              COALESCE(vr.party_name, p.name) AS party_name,
+             c.candidate_id,
              c.party_id,
              et.name AS election_type_name
       FROM VOTE_RECORD vr
@@ -137,27 +138,28 @@ router.post("/", authenticateJWT, async (req, res) => {
       }
     }
 
-    // Ensure candidate master is aligned when party information is provided
-    if (normalizedPartyId !== null) {
-      const candidateRows = await ds.query(
-        `SELECT candidate_id, party_id FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-        [normalizedCandidateName]
-      )
+    // Ensure candidate master exists and reflects latest party information
+    const candidateRows = await ds.query(
+      `SELECT candidate_id, party_id FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+      [normalizedCandidateName]
+    )
 
-      if (candidateRows && candidateRows.length > 0) {
-        const existing = candidateRows[0]
-        if (existing.party_id !== normalizedPartyId) {
-          await ds.query(
-            `UPDATE CANDIDATE SET party_id = $1 WHERE candidate_id = $2`,
-            [normalizedPartyId, existing.candidate_id]
-          )
-        }
-      } else {
+    if (candidateRows && candidateRows.length > 0) {
+      const existing = candidateRows[0]
+      if (
+        normalizedPartyId !== null &&
+        existing.party_id !== normalizedPartyId
+      ) {
         await ds.query(
-          `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)`,
-          [normalizedCandidateName, normalizedPartyId]
+          `UPDATE CANDIDATE SET party_id = $1 WHERE candidate_id = $2`,
+          [normalizedPartyId, existing.candidate_id]
         )
       }
+    } else {
+      await ds.query(
+        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)`,
+        [normalizedCandidateName, normalizedPartyId]
+      )
     }
 
     // @ts-ignore
@@ -225,9 +227,11 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              vr.election_type_id,
              vr.notes,
              COALESCE(vr.party_name, p.name) AS party_name,
+             c.candidate_id,
              c.party_id,
              et.name AS election_type_name,
              m.manifesto_id,
+             m.candidate_id AS manifesto_candidate_id,
              m.content AS manifesto_content,
              m.content_format AS manifesto_content_format,
              a.achievement_id,
@@ -238,7 +242,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
       LEFT JOIN MANIFESTO m
-        ON LOWER(m.candidate_name) = LOWER(vr.candidate_name)
+        ON m.candidate_id = c.candidate_id
        AND LOWER(m.election_name) = LOWER(vr.election_name)
       LEFT JOIN ACHIEVEMENT a
         ON LOWER(a.candidate_name) = LOWER(vr.candidate_name)
@@ -255,6 +259,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
     const [record] = rows
     const {
       manifesto_id: manifestoId,
+      manifesto_candidate_id: manifestoCandidateId,
       manifesto_content: manifestoContent,
       manifesto_content_format: manifestoContentFormat,
       achievement_id: achievementId,
@@ -269,6 +274,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
             manifesto_id: manifestoId,
             election_name: rest.election_name,
             candidate_name: rest.candidate_name,
+            candidate_id: manifestoCandidateId ?? null,
             content: manifestoContent,
             content_format: manifestoContentFormat || "markdown",
           }

@@ -42,6 +42,7 @@ type ManifestoDetail = {
   candidate_name: string
   content: string
   content_format: "markdown" | "html"
+  candidate_id?: number | null
 }
 
 type AchievementDetail = {
@@ -55,6 +56,7 @@ type AchievementDetail = {
 type VoteDetail = {
   vote_id: number
   user_id: number
+  candidate_id?: number | null
   candidate_name?: string | null
   vote_date?: string | null
   social_post_url?: string | null
@@ -484,6 +486,8 @@ export default function HistoryDetailPage() {
 
       const data = (await response.json()) as {
         manifesto_id?: number
+        candidate_id?: number
+        candidate_name?: string
         content?: string
         content_format?: string
       }
@@ -491,9 +495,11 @@ export default function HistoryDetailPage() {
       const updatedManifesto = {
         manifesto_id: data?.manifesto_id ?? vote.manifesto?.manifesto_id ?? 0,
         election_name: vote.election_name || election,
-        candidate_name: vote.candidate_name || candidate,
+        candidate_name:
+          data?.candidate_name || vote.candidate_name || candidate,
         content: data?.content ?? contentToSave,
         content_format: (data?.content_format as "markdown" | "html") ?? "html",
+        candidate_id: data?.candidate_id ?? vote.candidate_id ?? null,
       }
 
       setVote((prev) =>

@@ -1,8 +1,36 @@
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm"
+import { Party } from "./Party"
+import { Manifesto } from "./Manifesto"
+
 // 候補者
-export interface Candidate {
-  candidate_id: number
-  name: string
-  party_id: number
-  manifesto_url: string
-  achievements: string
+@Entity({ name: "candidate" })
+export class Candidate {
+  @PrimaryGeneratedColumn()
+  candidate_id!: number
+
+  @Column({ length: 100 })
+  name!: string
+
+  @Column({ type: "int", nullable: true })
+  party_id!: number | null
+
+  @ManyToOne(() => Party, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "party_id" })
+  party?: Party | null
+
+  @Column({ length: 255, nullable: true })
+  manifesto_url?: string | null
+
+  @Column({ type: "text", nullable: true })
+  achievements?: string | null
+
+  @OneToMany(() => Manifesto, (manifesto) => manifesto.candidate)
+  manifestos?: Manifesto[]
 }

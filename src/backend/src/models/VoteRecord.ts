@@ -5,6 +5,7 @@ import { Achievement } from "./Achievement"
 export interface VoteRecord {
   vote_id: number
   user_id: number
+  candidate_id?: number | null
   candidate_name: string | null
   election_name: string
   election_type_id: number

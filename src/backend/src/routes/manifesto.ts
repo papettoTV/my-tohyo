@@ -171,22 +171,46 @@ router.post("/", authenticateJWT, async (req, res) => {
     }
 
     const ds = await getDataSource()
+
+    const existingCandidateRows = await ds.query(
+      `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+      [candidate]
+    )
+
+    let candidateId: number
+    let canonicalCandidateName: string
+
+    if (existingCandidateRows && existingCandidateRows.length > 0) {
+      candidateId = existingCandidateRows[0].candidate_id
+      canonicalCandidateName = existingCandidateRows[0].name
+    } else {
+      const insertedCandidateRows = await ds.query(
+        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
+         RETURNING candidate_id, name`,
+        [candidate]
+      )
+
+      candidateId = insertedCandidateRows[0].candidate_id
+      canonicalCandidateName = insertedCandidateRows[0].name
+    }
+
     const rows = await ds.query(
       `
-        INSERT INTO MANIFESTO (candidate_name, election_name, content, content_format)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (candidate_name, election_name)
-        DO UPDATE SET content = EXCLUDED.content, content_format = EXCLUDED.content_format
+        INSERT INTO MANIFESTO (candidate_id, candidate_name, election_name, content, content_format)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (candidate_id, election_name)
+        DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format
         RETURNING manifesto_id
       `,
-      [candidate, election, body, format]
+      [candidateId, canonicalCandidateName, election, body, format]
     )
 
     const manifestoId = rows?.[0]?.manifesto_id
 
     return res.status(201).json({
       manifesto_id: manifestoId,
-      candidate_name: candidate,
+      candidate_id: candidateId,
+      candidate_name: canonicalCandidateName,
       election_name: election,
       content: body,
       content_format: format,

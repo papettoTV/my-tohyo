@@ -28,7 +28,7 @@ CREATE TABLE PARTY (
 CREATE TABLE CANDIDATE (
   candidate_id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
-  party_id INTEGER NOT NULL,
+  party_id INTEGER,
   manifesto_url VARCHAR(255),
   achievements TEXT,
   FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
@@ -36,11 +36,13 @@ CREATE TABLE CANDIDATE (
 
 CREATE TABLE MANIFESTO (
   manifesto_id SERIAL PRIMARY KEY,
+  candidate_id INTEGER NOT NULL,
   election_name VARCHAR(150) NOT NULL,
   candidate_name VARCHAR(100) NOT NULL,
   content_format VARCHAR(20) NOT NULL DEFAULT 'markdown',
   content TEXT NOT NULL,
-  UNIQUE (candidate_name, election_name)
+  FOREIGN KEY (candidate_id) REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE,
+  UNIQUE (candidate_id, election_name)
 );
 
 CREATE TABLE ACHIEVEMENT (

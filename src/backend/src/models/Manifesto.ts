@@ -1,15 +1,32 @@
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm"
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from "typeorm"
+import { Candidate } from "./Candidate"
 
 export type ManifestoFormat = "html" | "markdown"
 
 @Entity({ name: "manifesto" })
-@Unique(["candidate_name", "election_name"])
+@Unique(["candidate_id", "election_name"])
 export class Manifesto {
   @PrimaryGeneratedColumn()
   manifesto_id!: number
 
   @Column({ length: 150 })
   election_name!: string
+
+  @Column({ type: "int" })
+  candidate_id!: number
+
+  @ManyToOne(() => Candidate, (candidate) => candidate.manifestos, {
+    onDelete: "CASCADE",
+  })
+  @JoinColumn({ name: "candidate_id" })
+  candidate!: Candidate
 
   @Column({ length: 100 })
   candidate_name!: string

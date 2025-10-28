@@ -21,6 +21,7 @@ type VoteRecord = {
   photo_url?: string | null
   social_post_url?: string | null
   user_id: number
+  candidate_id?: number | null
   election_name: string
   election_type_id: number
   election_type_name?: string | null
