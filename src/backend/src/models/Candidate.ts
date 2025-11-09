@@ -25,7 +25,7 @@ export class Candidate {
   @JoinColumn({ name: "party_id" })
   party?: Party | null
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   manifesto_url?: string | null
 
   @Column({ type: "text", nullable: true })

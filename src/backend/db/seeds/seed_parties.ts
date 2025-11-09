@@ -1,6 +1,6 @@
 import "reflect-metadata"
-import { AppDataSource } from "../src/data-source"
-import { Party } from "../src/models/Party"
+import { AppDataSource } from "../../src/data-source"
+import { Party } from "../../src/models/Party"
 
 const seedPartyNames = [
   "自由民主党",
