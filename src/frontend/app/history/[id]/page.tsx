@@ -36,6 +36,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+type ManifestoStatus = "PROGRESS" | "COMPLETE"
+
 type ManifestoDetail = {
   manifesto_id: number
   election_name: string
@@ -43,6 +45,7 @@ type ManifestoDetail = {
   content: string
   content_format: "markdown" | "html"
   candidate_id?: number | null
+  status?: ManifestoStatus | null
 }
 
 type AchievementDetail = {
@@ -490,6 +493,7 @@ export default function HistoryDetailPage() {
         candidate_name?: string
         content?: string
         content_format?: string
+        status?: ManifestoStatus | null
       }
 
       const updatedManifesto = {
@@ -500,6 +504,7 @@ export default function HistoryDetailPage() {
         content: data?.content ?? contentToSave,
         content_format: (data?.content_format as "markdown" | "html") ?? "html",
         candidate_id: data?.candidate_id ?? vote.candidate_id ?? null,
+        status: data?.status ?? vote.manifesto?.status ?? null,
       }
 
       setVote((prev) =>

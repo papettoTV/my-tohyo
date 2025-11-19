@@ -94,6 +94,12 @@ const swaggerDefinition: SwaggerDefinition = {
             description: "マニフェスト本文の形式",
           },
           content: { type: "string", description: "マニフェスト本文" },
+          status: {
+            type: "string",
+            nullable: true,
+            enum: ["PROGRESS", "COMPLETE"],
+            description: "更新状況ステータス（null: 未更新、PROGRESS: 更新中、COMPLETE: 更新済み）",
+          },
         },
         required: [
           "manifesto_id",

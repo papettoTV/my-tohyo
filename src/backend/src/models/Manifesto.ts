@@ -9,6 +9,7 @@ import {
 import { Candidate } from "./Candidate"
 
 export type ManifestoFormat = "html" | "markdown"
+export type ManifestoStatus = "PROGRESS" | "COMPLETE"
 
 @Entity({ name: "manifesto" })
 @Unique(["candidate_id", "election_name"])
@@ -36,4 +37,7 @@ export class Manifesto {
 
   @Column({ name: "content_format", length: 20, default: "markdown" })
   content_format!: ManifestoFormat
+
+  @Column({ type: "varchar", length: 20, nullable: true, default: null })
+  status!: ManifestoStatus | null
 }

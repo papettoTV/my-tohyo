@@ -37,6 +37,7 @@ erDiagram
         string candidate_name "候補者名"
         string content_format "形式 (markdown/html)"
         text content "マニフェスト本文"
+        string status "更新状況 (null/PROGRESS/COMPLETE)"
     }
     ACHIEVEMENT {
         int achievement_id PK "実績ID"
@@ -91,7 +92,7 @@ erDiagram
 
 - **MANIFESTO（マニフェスト）**
 
-  - マニフェスト ID（主キー）、候補者 ID（外部キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文。候補者 ID と選挙名の組み合わせで一意
+  - マニフェスト ID（主キー）、候補者 ID（外部キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文、更新状況ステータス（null=未更新 / PROGRESS=更新中 / COMPLETE=更新済み）。候補者 ID と選挙名の組み合わせで一意
 
 - **ACHIEVEMENT（実績・活動）**
 

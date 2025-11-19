@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { getDataSource } from "../data-source"
 import { authenticateJWT } from "../middleware/auth"
+import { scheduleManifestoAutoUpdate } from "../services/manifestoAutoUpdater"
 
 const router = Router()
 
@@ -105,12 +106,13 @@ router.post("/", authenticateJWT, async (req, res) => {
     }
 
     const etRows = await ds.query(
-      `SELECT election_type_id FROM ELECTION_TYPE WHERE election_type_id = $1`,
+      `SELECT election_type_id, name FROM ELECTION_TYPE WHERE election_type_id = $1`,
       [normalizedElectionTypeId]
     )
     if (!etRows || etRows.length === 0) {
       return res.status(400).json({ message: "Invalid election_type_id" })
     }
+    const electionTypeName: string | null = etRows[0]?.name || null
 
     const normalizedPartyId =
       party_id === undefined || party_id === null ? null : Number(party_id)
@@ -140,26 +142,37 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     // Ensure candidate master exists and reflects latest party information
     const candidateRows = await ds.query(
-      `SELECT candidate_id, party_id FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+      `SELECT candidate_id, party_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
       [normalizedCandidateName]
     )
+    let candidateId: number
+    let canonicalCandidateName = normalizedCandidateName
 
     if (candidateRows && candidateRows.length > 0) {
       const existing = candidateRows[0]
+      candidateId = existing.candidate_id
+      if (existing.name) {
+        canonicalCandidateName = existing.name
+      }
       if (
         normalizedPartyId !== null &&
         existing.party_id !== normalizedPartyId
       ) {
         await ds.query(
           `UPDATE CANDIDATE SET party_id = $1 WHERE candidate_id = $2`,
-          [normalizedPartyId, existing.candidate_id]
+          [normalizedPartyId, candidateId]
         )
       }
     } else {
-      await ds.query(
-        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)`,
+      const inserted = await ds.query(
+        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)
+         RETURNING candidate_id, name`,
         [normalizedCandidateName, normalizedPartyId]
       )
+      candidateId = inserted[0].candidate_id
+      if (inserted[0]?.name) {
+        canonicalCandidateName = inserted[0].name
+      }
     }
 
     // @ts-ignore
@@ -196,6 +209,15 @@ router.post("/", authenticateJWT, async (req, res) => {
       ]
     )
     const voteId = insertVote[0].vote_id
+
+    scheduleManifestoAutoUpdate({
+      candidateId,
+      candidateName: canonicalCandidateName,
+      electionName: normalizedElectionName,
+      partyName: normalizedPartyName,
+      electionTypeName,
+      voteDate: vote_date,
+    })
 
     return res.status(201).json({ vote_id: voteId })
   } catch (e) {
@@ -234,6 +256,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              m.candidate_id AS manifesto_candidate_id,
              m.content AS manifesto_content,
              m.content_format AS manifesto_content_format,
+             m.status AS manifesto_status,
              a.achievement_id,
              a.content AS achievement_content,
              a.content_format AS achievement_content_format
@@ -262,6 +285,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       manifesto_candidate_id: manifestoCandidateId,
       manifesto_content: manifestoContent,
       manifesto_content_format: manifestoContentFormat,
+      manifesto_status: manifestoStatus,
       achievement_id: achievementId,
       achievement_content: achievementContent,
       achievement_content_format: achievementContentFormat,
@@ -277,6 +301,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
             candidate_id: manifestoCandidateId ?? null,
             content: manifestoContent,
             content_format: manifestoContentFormat || "markdown",
+            status: manifestoStatus ?? null,
           }
         : null
 

@@ -3,6 +3,7 @@ import OpenAI from "openai"
 
 import { authenticateJWT } from "../middleware/auth"
 import { getDataSource } from "../data-source"
+import { ManifestoStatus } from "../models/Manifesto"
 
 const router = Router()
 
@@ -149,13 +150,19 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 // POST /api/manifestos
 router.post("/", authenticateJWT, async (req, res) => {
   try {
-    const { candidate_name, election_name, content, content_format } =
-      req.body as {
-        candidate_name?: string
-        election_name?: string
-        content?: string
-        content_format?: string
-      }
+    const {
+      candidate_name,
+      election_name,
+      content,
+      content_format,
+      status: requestedStatus,
+    } = req.body as {
+      candidate_name?: string
+      election_name?: string
+      content?: string
+      content_format?: string
+      status?: string | null
+    }
 
     const candidate = candidate_name?.trim()
     const election = election_name?.trim()
@@ -168,6 +175,19 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     if (format !== "markdown" && format !== "html") {
       return res.status(400).json({ message: "content_format が不正です" })
+    }
+
+    let status: ManifestoStatus | null = null
+    if (requestedStatus !== undefined && requestedStatus !== null) {
+      if (typeof requestedStatus !== "string") {
+        return res.status(400).json({ message: "status は文字列で指定してください" })
+      }
+      const normalizedStatus = requestedStatus.trim().toUpperCase()
+      const allowed: ManifestoStatus[] = ["PROGRESS", "COMPLETE"]
+      if (!allowed.includes(normalizedStatus as ManifestoStatus)) {
+        return res.status(400).json({ message: "status が不正です" })
+      }
+      status = normalizedStatus as ManifestoStatus
     }
 
     const ds = await getDataSource()
@@ -196,16 +216,17 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     const rows = await ds.query(
       `
-        INSERT INTO MANIFESTO (candidate_id, candidate_name, election_name, content, content_format)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO MANIFESTO (candidate_id, candidate_name, election_name, content, content_format, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (candidate_id, election_name)
-        DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format
-        RETURNING manifesto_id
+        DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format, status = EXCLUDED.status
+        RETURNING manifesto_id, status
       `,
-      [candidateId, canonicalCandidateName, election, body, format]
+      [candidateId, canonicalCandidateName, election, body, format, status]
     )
 
     const manifestoId = rows?.[0]?.manifesto_id
+    const savedStatus = rows?.[0]?.status ?? status ?? null
 
     return res.status(201).json({
       manifesto_id: manifestoId,
@@ -214,6 +235,7 @@ router.post("/", authenticateJWT, async (req, res) => {
       election_name: election,
       content: body,
       content_format: format,
+      status: savedStatus,
     })
   } catch (error) {
     console.error("[manifestos] failed to upsert:", error)
