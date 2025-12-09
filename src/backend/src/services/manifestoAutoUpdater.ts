@@ -1,4 +1,5 @@
 import OpenAI from "openai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import { getDataSource } from "../data-source"
 import { ManifestoStatus } from "../models/Manifesto"
 
@@ -35,31 +36,32 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
     status: "PROGRESS",
   })
 
-  const apiKey =
-    process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY || undefined
-  if (!apiKey) {
-    console.warn(`${LOG_PREFIX} skipped (missing OpenAI API key)`)
+  let content: string | undefined
+
+  try {
+    // 1. Try OpenAI
+    content = await generateWithOpenAI(payload)
+  } catch (error: any) {
+    // 2. If 429, try Gemini
+    if (error?.status === 429) {
+      console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
+      try {
+        content = await generateWithGemini(payload)
+      } catch (geminiError) {
+        console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
+      }
+    } else {
+      console.error(`${LOG_PREFIX} OpenAI failed (not 429):`, error)
+    }
+  }
+
+  if (!content) {
+    console.warn(`${LOG_PREFIX} content generation failed or empty`)
     await updateStatus(ds, candidateId, electionName, null)
     return
   }
 
   try {
-    const client = new OpenAI({ apiKey })
-    const prompt = buildActionPrompt(payload)
-    const response = await client.responses.create({
-      model: "gpt-5",
-      reasoning: { effort: "medium" },
-      tools: [{ type: "web_search_preview" }],
-      input: prompt,
-    })
-
-    const content = response.output_text?.trim()
-    if (!content) {
-      console.error(`${LOG_PREFIX} empty content`, response)
-      await updateStatus(ds, candidateId, electionName, null)
-      return
-    }
-
     await ds.query(
       `
         UPDATE MANIFESTO
@@ -72,10 +74,54 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
       `,
       [content, "COMPLETE", candidateName, candidateId, electionName]
     )
-  } catch (error) {
-    console.error(`${LOG_PREFIX} generation failed`, error)
+  } catch (dbError) {
+    console.error(`${LOG_PREFIX} DB update failed`, dbError)
     await updateStatus(ds, candidateId, electionName, null)
   }
+}
+
+async function generateWithOpenAI(
+  payload: AutoUpdatePayload
+): Promise<string | undefined> {
+  const apiKey =
+    process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY || undefined
+  if (!apiKey) {
+    console.warn(`${LOG_PREFIX} OpenAI skipped (missing API key)`)
+    return undefined
+  }
+
+  const client = new OpenAI({ apiKey, maxRetries: 2 }) // Lower retries since we have fallback
+  const prompt = buildActionPrompt(payload)
+  const response = await client.responses.create({
+    model: "gpt-5",
+    reasoning: { effort: "medium" },
+    tools: [{ type: "web_search_preview" }],
+    input: prompt,
+  })
+
+  return response.output_text?.trim()
+}
+
+async function generateWithGemini(
+  payload: AutoUpdatePayload
+): Promise<string | undefined> {
+  console.warn(process.env)
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    console.warn(`${LOG_PREFIX} Gemini skipped (missing API key)`)
+    return undefined
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash-exp",
+    tools: [{ googleSearchRetrieval: {} }],
+  })
+
+  const prompt = buildActionPrompt(payload)
+  const result = await model.generateContent(prompt)
+  const response = await result.response
+  return response.text()
 }
 
 async function ensureManifestoRow(

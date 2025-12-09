@@ -1,5 +1,6 @@
 import { Router } from "express"
 import OpenAI from "openai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 import { authenticateJWT } from "../middleware/auth"
 import { getDataSource } from "../data-source"
@@ -121,20 +122,51 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 
     console.log("userPrompt", userPrompt)
 
-    const client = new OpenAI({ apiKey })
+    let content: string | undefined
 
-    const response = await client.responses.create({
-      model: "gpt-5",
-      input: userPrompt,
-    })
+    try {
+      const client = new OpenAI({ apiKey })
+      const response = await client.responses.create({
+        model: "gpt-5",
+        input: userPrompt,
+      })
+      content = response.output_text?.trim()
+    } catch (error: any) {
+      if (error?.status === 429) {
+        console.warn(
+          "[manifestos/auto-generate] OpenAI 429, falling back to Gemini..."
+        )
+        const geminiKey = process.env.GEMINI_API_KEY
+          console.warn(process.env)
 
-    const content = response.output_text?.trim()
+        if (geminiKey) {
+          try {
+            const genAI = new GoogleGenerativeAI(geminiKey)
+            const model = genAI.getGenerativeModel({
+              model: "gemini-2.0-flash-exp",
+            })
+            const result = await model.generateContent(userPrompt)
+            const response = await result.response
+            content = response.text()
+          } catch (geminiError) {
+            console.error(
+              "[manifestos/auto-generate] Gemini fallback failed:",
+              geminiError
+            )
+            throw error // Throw original error if fallback fails
+          }
+        } else {
+          console.warn(
+            "[manifestos/auto-generate] Gemini skipped (missing API key)"
+          )
+          throw error
+        }
+      } else {
+        throw error
+      }
+    }
 
     if (!content) {
-      console.error(
-        "[manifestos/auto-generate] unexpected API response:",
-        JSON.stringify(response, null, 2)
-      )
       return res.status(502).json({ message: "生成結果を取得できませんでした" })
     }
 
