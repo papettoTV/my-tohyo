@@ -8,7 +8,6 @@ import {
 } from "typeorm"
 import { Party } from "./Party"
 import { Manifesto } from "./Manifesto"
-
 // 候補者
 @Entity({ name: "candidate" })
 export class Candidate {
@@ -30,6 +29,9 @@ export class Candidate {
 
   @Column({ type: "text", nullable: true })
   achievements?: string | null
+
+  // @OneToOne(() => Achievement, (achievement) => achievement.candidate)
+  // achievement?: Achievement
 
   @OneToMany(() => Manifesto, (manifesto) => manifesto.candidate)
   manifestos?: Manifesto[]

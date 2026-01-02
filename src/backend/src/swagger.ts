@@ -110,27 +110,6 @@ const swaggerDefinition: SwaggerDefinition = {
           "content",
         ],
       },
-      Achievement: {
-        type: "object",
-        properties: {
-          achievement_id: { type: "integer", description: "実績ID" },
-          election_name: { type: "string", description: "選挙名" },
-          candidate_name: { type: "string", description: "候補者名" },
-          content_format: {
-            type: "string",
-            enum: ["markdown", "html"],
-            description: "実績本文の形式",
-          },
-          content: { type: "string", description: "実績本文" },
-        },
-        required: [
-          "achievement_id",
-          "election_name",
-          "candidate_name",
-          "content_format",
-          "content",
-        ],
-      },
       VoteRecord: {
         type: "object",
         properties: {
@@ -148,10 +127,6 @@ const swaggerDefinition: SwaggerDefinition = {
           manifesto: {
             $ref: "#/components/schemas/Manifesto",
             description: "候補者に紐づくマニフェスト情報（存在しない場合はnull）",
-          },
-          achievement: {
-            $ref: "#/components/schemas/Achievement",
-            description: "投票記録と紐づく実績・活動情報（存在しない場合はnull）",
           },
         },
         required: [
