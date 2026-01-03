@@ -309,4 +309,36 @@ router.get("/:id", authenticateJWT, async (req, res) => {
   }
 })
 
+// 投票記録削除
+router.delete("/:id", authenticateJWT, async (req, res) => {
+  try {
+    const ds = await getDataSource()
+    const { id } = req.params
+
+    // @ts-ignore
+    const tokenUser = req.user as any
+    const userId = extractUserId(tokenUser)
+    if (userId === null) {
+      return res.status(400).json({ message: "Invalid user context" })
+    }
+
+    // まず存在確認と所有者確認
+    const check = await ds.query(
+      `SELECT vote_id FROM VOTE_RECORD WHERE vote_id = $1 AND user_id = $2`,
+      [id, userId]
+    )
+
+    if (!check || check.length === 0) {
+      return res.status(404).json({ message: "Vote record not found or not authorized" })
+    }
+
+    await ds.query(`DELETE FROM VOTE_RECORD WHERE vote_id = $1`, [id])
+
+    return res.status(204).send()
+  } catch (e) {
+    console.error("Failed to delete vote record:", e)
+    return res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 export default router
