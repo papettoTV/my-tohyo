@@ -12,6 +12,27 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
+import { 
   ArrowLeft,
   Calendar,
   Vote,
@@ -23,18 +44,11 @@ import {
   ExternalLink,
   Sparkles,
   Loader2,
+  Trash2, 
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 
 type ManifestoStatus = "PROGRESS" | "COMPLETE"
 
@@ -210,6 +224,58 @@ export default function HistoryDetailPage() {
   )
   const [previewOpen, setPreviewOpen] = useState(false)
   const [autoError, setAutoError] = useState<string | null>(null)
+
+
+
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
+  const { toast } = useToast()
+
+  const handleDelete = useCallback(async () => {
+    if (!vote || isDeleting) return
+    
+    setIsDeleting(true)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+    if (!token) {
+      toast({
+        title: "エラー",
+        description: "認証情報が見つかりません",
+        variant: "destructive",
+      })
+      setIsDeleting(false)
+      return
+    }
+
+    try {
+      const base = resolveApiBase()
+      const res = await fetch(`${base}/api/vote-records/${vote.vote_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (res.ok) {
+        toast({
+          title: "削除完了",
+          description: "投票履歴を削除しました",
+        })
+        router.push("/history")
+        return
+      }
+
+      throw new Error(`Failed to delete: ${res.status}`)
+    } catch (e) {
+      console.error("Delete error:", e)
+      toast({
+        title: "エラー",
+        description: "削除中にエラーが発生しました",
+        variant: "destructive",
+      })
+      setIsDeleting(false)
+    }
+  }, [vote, isDeleting, router, toast])
 
   const generatedManifestoHtml = useMemo(() => {
     const body = generatedManifesto?.trim()
@@ -793,6 +859,35 @@ export default function HistoryDetailPage() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Delete Button Area */}
+        <div className="max-w-5xl mx-auto mt-12 flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isDeleting}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                この投票履歴を削除
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  この操作は取り消せません。投票履歴と関連するデータが完全に削除されます。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  className="bg-red-600 focus:ring-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? "削除中..." : "削除する"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         <Dialog
