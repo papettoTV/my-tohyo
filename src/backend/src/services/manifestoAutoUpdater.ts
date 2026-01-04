@@ -13,7 +13,7 @@ type AutoUpdatePayload = {
 }
 
 const PLACEHOLDER_CONTENT =
-  "<ul><li>自動更新を準備しています。しばらくお待ちください。</li></ul>"
+  "<ul><li>未更新</li></ul>"
 const LOG_PREFIX = "[manifesto-auto-update]"
 
 export function scheduleManifestoAutoUpdate(payload: AutoUpdatePayload) {
