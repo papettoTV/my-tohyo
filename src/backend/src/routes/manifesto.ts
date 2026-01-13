@@ -79,7 +79,7 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 
     const today = new Date().toISOString().slice(0, 10)
 
-    const userPrompt = `役割: あなたは中立な編集者です。以下の「検証済み事実情報」だけを根拠に、${derivedYear}年参院選 ${derivedDistrict}選挙区に出馬の「${candidate}」のマニフェストを、シンプルなリストHTMLのみで作成してください。
+    const userPrompt = `役割: あなたは中立な編集者です。以下の「検証済み事実情報」に加え、必ず web_search を用いて一次・公的ソースを優先的に収集し、推測や創作をせずに、${derivedYear}年に出馬の「${candidate}」のマニフェストを、シンプルなリストHTMLのみで作成してください。
 
 出力制約:
 - <ul>/<ol>/<li>のみ使用（必要に応じ<a>, <time>, <q>可）。見出しタグや<p>、スタイル、コメントは使わない。
