@@ -128,6 +128,8 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
       const client = new OpenAI({ apiKey })
       const response = await client.responses.create({
         model: "gpt-5",
+        reasoning: { effort: "medium" },
+        tools: [{ type: "web_search_preview" }],
         input: userPrompt,
       })
       content = response.output_text?.trim()
@@ -137,7 +139,7 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
           "[manifestos/auto-generate] OpenAI 429, falling back to Gemini..."
         )
         const geminiKey = process.env.GEMINI_API_KEY
-          console.warn(process.env)
+        console.warn(process.env)
 
         if (geminiKey) {
           try {
@@ -212,7 +214,9 @@ router.post("/", authenticateJWT, async (req, res) => {
     let status: ManifestoStatus | null = null
     if (requestedStatus !== undefined && requestedStatus !== null) {
       if (typeof requestedStatus !== "string") {
-        return res.status(400).json({ message: "status は文字列で指定してください" })
+        return res
+          .status(400)
+          .json({ message: "status は文字列で指定してください" })
       }
       const normalizedStatus = requestedStatus.trim().toUpperCase()
       const allowed: ManifestoStatus[] = ["PROGRESS", "COMPLETE"]
