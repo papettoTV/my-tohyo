@@ -301,7 +301,15 @@ router.get("/:id", authenticateJWT, async (req, res) => {
     return res.json({
       ...rest,
       manifesto,
-      achievements: achievements || null,
+      achievement: achievements
+        ? {
+            achievement_id: 0, // Placeholder ID since it's a column
+            content: achievements,
+            content_format: "html",
+            candidate_name: rest.candidate_name,
+            election_name: rest.election_name,
+          }
+        : null,
     })
   } catch (e) {
     console.error("Failed to fetch vote record:", e)
