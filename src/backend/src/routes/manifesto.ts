@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { authenticateJWT } from "../middleware/auth"
 import { getDataSource } from "../data-source"
 import { ManifestoStatus } from "../models/Manifesto"
+import { generateManifestoPrompt } from "../prompts/manifestoTemplate"
 
 const router = Router()
 
@@ -79,107 +80,17 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 
     const today = new Date().toISOString().slice(0, 10)
 
-    const userPrompt = `役割: あなたは中立な編集者です。以下の「検証済み事実情報」に加え、必ず web_search を用いて一次・公的ソースを優先的に収集し、推測や創作をせずに、${derivedYear}年に出馬の「${candidate}」のマニフェストを、読みやすくメリハリのあるHTML形式で作成してください。
-
-出力制約:
-- HTMLタグ（<h3>, <p>, <ul>, <ol>, <li>, <strong>, <a>, <time>, <q>, <div>, <section>）を使用。
-- Tailwind CSSクラスで見た目を整えること（例: text-lg, font-bold, mb-2, list-disc, pl-5, space-y-2など）。
-- <h1>, <h2> は使用しない。
-- 事実情報に無い記述は禁止。不足は「情報未提供」と明記。
-- 数値・固有名詞は出典と一致する場合のみ。
-- 各セクション間は十分な余白（mb-6など）を取る。
-
-検証済み事実情報:
-- 選挙名: ${sanitize(election, "第27回参議院議員通常選挙")}
-- 年: ${derivedYear}
-- 選挙区: ${derivedDistrict}
-- 候補者: ${candidate}
-- 所属: ${derivedParty}
-
-出力構成（以下のセクション構成を厳守）:
-<div class="space-y-8 text-gray-800">
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■要約</h3>
-    <ul class="list-disc pl-5 space-y-2 leading-relaxed">
-      <li><!-- 3〜5行 --></li>
-    </ul>
-  </section>
-
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■公約</h3>
-    <ul class="list-disc pl-5 space-y-2 leading-relaxed font-medium">
-      <!-- 最大7項目 -->
-    </ul>
-  </section>
-
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■具体策</h3>
-    <div class="space-y-6">
-      <div>
-        <strong class="block text-lg font-semibold mb-2 text-indigo-700">経済・物価</strong>
-        <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-          <!-- 箇条書き -->
-        </ul>
-      </div>
-      <div>
-        <strong class="block text-lg font-semibold mb-2 text-indigo-700">子育て・教育</strong>
-        <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-          <!-- 箇条書き -->
-        </ul>
-      </div>
-      <div>
-        <strong class="block text-lg font-semibold mb-2 text-indigo-700">社会保障</strong>
-        <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-          <!-- 箇条書き -->
-        </ul>
-      </div>
-      <div>
-        <strong class="block text-lg font-semibold mb-2 text-indigo-700">地域・生活</strong>
-        <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-          <!-- 箇条書き -->
-        </ul>
-      </div>
-      <div>
-        <strong class="block text-lg font-semibold mb-2 text-indigo-700">行政・政治改革</strong>
-        <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-          <!-- 箇条書き -->
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■財源・実施スケジュール</h3>
-    <p class="text-sm leading-relaxed text-gray-700">{{情報未提供 も可}}</p>
-  </section>
-
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■実績・背景</h3>
-    <ul class="list-disc pl-5 space-y-2 text-sm leading-relaxed">
-      <!-- 事実のみ -->
-    </ul>
-  </section>
-
-  <section>
-    <h3 class="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-4 text-gray-900">■論点・留意事項（中立）</h3>
-    <ul class="list-disc pl-5 space-y-2 text-sm leading-relaxed">
-      <li><!-- 1〜3点 --></li>
-    </ul>
-  </section>
-
-  <section class="bg-gray-50 p-4 rounded-lg border border-gray-100 mt-6">
-    <h3 class="text-sm font-bold text-gray-500 mb-2">■出典</h3>
-    <ol class="list-decimal pl-5 text-xs text-gray-500 space-y-1">
-      <li><a href="${source1}" target="_blank" rel="noopener" class="text-blue-500 hover:underline break-all">公式/報道1</a></li>
-      <li><a href="${source2}" target="_blank" rel="noopener" class="text-blue-500 hover:underline break-all">公式/報道2</a></li>
-      <li><a href="${source3}" target="_blank" rel="noopener" class="text-blue-500 hover:underline break-all">公式/報道3</a></li>
-    </ol>
-  </section>
-
-  <div class="text-xs text-right text-gray-400 mt-2">
-    最終更新：<time datetime="${today}">${today}</time>
-  </div>
-</div>`
+    const userPrompt = generateManifestoPrompt({
+      candidate,
+      election: sanitize(election, "第27回参議院議員通常選挙") as string,
+      derivedYear,
+      derivedDistrict,
+      derivedParty,
+      source1,
+      source2,
+      source3,
+      today,
+    })
 
     console.log("userPrompt", userPrompt)
 
