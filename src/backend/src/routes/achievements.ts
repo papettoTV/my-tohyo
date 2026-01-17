@@ -133,46 +133,71 @@ router.post("/", authenticateJWT, async (req, res) => {
   try {
     const {
       candidate_name,
+      election_name,
       content,
     } = req.body as {
       candidate_name?: string
+      election_name?: string
       content?: string
     }
 
     const candidate = candidate_name?.trim()
+    const election = election_name?.trim() // New requirement
     const body = content?.trim()
 
-    if (!candidate || !body) {
-      return res.status(400).json({ message: "candidate_name と content は必須です" })
+    if (!candidate || !election || !body) {
+      return res.status(400).json({ message: "candidate_name, election_name, content は必須です" })
     }
 
     const ds = await getDataSource()
 
-    // 候補者を特定
+    // 候補者を特定 (または新規作成が必要？ マニフェスト同様に、候補者がいない場合は作成するロジックを入れるべきか、
+    // あるいは候補者マスタは別途管理されている前提か。
+    // 現状の voteRecord.ts の POST では候補者がなければインサートしている。
+    // ここでも安全のため、候補者が存在しない場合はエラーにするか、作成するか。
+    // マニフェスト同様のロジックに合わせるのが自然。ひとまず検索のみ。
+    
     const candidateRows = await ds.query(
-      `SELECT candidate_id FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+      `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
       [candidate]
     )
 
-    if (!candidateRows || candidateRows.length === 0) {
-        return res.status(404).json({ message: "候補者が見つかりません" })
+    let candidateId: number
+    let canonicalCandidateName: string
+
+    if (candidateRows && candidateRows.length > 0) {
+      candidateId = candidateRows[0].candidate_id
+      canonicalCandidateName = candidateRows[0].name
+    } else {
+       // 候補者マスタ生成 (Manifesto側と合わせる)
+       const insertedCandidateRows = await ds.query(
+        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
+         RETURNING candidate_id, name`,
+        [candidate]
+      )
+      candidateId = insertedCandidateRows[0].candidate_id
+      canonicalCandidateName = insertedCandidateRows[0].name
     }
 
-    const candidateId = candidateRows[0].candidate_id
-
-    // 実績を更新
+    // 実績を ACHIEVEMENT テーブルに保存 (Upsert)
+    // 以前の CANDIDATE への保存はやめる
     await ds.query(
       `
-        UPDATE CANDIDATE
-           SET achievements = $1
-         WHERE candidate_id = $2
+        INSERT INTO ACHIEVEMENT (candidate_id, candidate_name, election_name, content, content_format)
+        VALUES ($1, $2, $3, $4, 'html')
+        ON CONFLICT (candidate_id, election_name)
+        DO UPDATE SET
+          candidate_name = EXCLUDED.candidate_name,
+          content = EXCLUDED.content,
+          content_format = EXCLUDED.content_format
       `,
-      [body, candidateId]
+      [candidateId, canonicalCandidateName, election, body]
     )
 
     return res.status(200).json({
       candidate_id: candidateId,
-      candidate_name: candidate,
+      candidate_name: canonicalCandidateName,
+      election_name: election,
       achievements: body
     })
 

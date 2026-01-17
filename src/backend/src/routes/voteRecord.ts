@@ -257,7 +257,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              m.content AS manifesto_content,
              m.content_format AS manifesto_content_format,
              m.status AS manifesto_status,
-             c.achievements
+             a.achievement_id,
+             a.content AS achievement_content,
+             a.content_format AS achievement_content_format
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
@@ -265,6 +267,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN MANIFESTO m
         ON m.candidate_id = c.candidate_id
        AND LOWER(m.election_name) = LOWER(vr.election_name)
+      LEFT JOIN ACHIEVEMENT a
+        ON a.candidate_id = c.candidate_id
+       AND LOWER(a.election_name) = LOWER(vr.election_name)
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
       [id, userId]
@@ -281,7 +286,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       manifesto_content: manifestoContent,
       manifesto_content_format: manifestoContentFormat,
       manifesto_status: manifestoStatus,
-      achievements,
+      achievement_id: achievementId,
+      achievement_content: achievementContent,
+      achievement_content_format: achievementContentFormat,
       ...rest
     } = record
 
@@ -298,18 +305,21 @@ router.get("/:id", authenticateJWT, async (req, res) => {
           }
         : null
 
+    const achievement =
+       achievementId !== null && achievementId !== undefined
+         ? {
+            achievement_id: achievementId,
+            election_name: rest.election_name,
+            candidate_name: rest.candidate_name,
+            content: achievementContent,
+            content_format: achievementContentFormat || "html",
+           }
+         : null
+
     return res.json({
       ...rest,
       manifesto,
-      achievement: achievements
-        ? {
-            achievement_id: 0, // Placeholder ID since it's a column
-            content: achievements,
-            content_format: "html",
-            candidate_name: rest.candidate_name,
-            election_name: rest.election_name,
-          }
-        : null,
+      achievement,
     })
   } catch (e) {
     console.error("Failed to fetch vote record:", e)
