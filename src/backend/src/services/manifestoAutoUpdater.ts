@@ -74,20 +74,31 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
 
   let content: string | undefined
 
-  try {
-    // 1. Try OpenAI
-    content = await generateWithOpenAI(userPrompt)
-  } catch (error: any) {
-    // 2. If 429, try Gemini
-    if (error?.status === 429) {
-      console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
-      try {
-        content = await generateWithGemini(userPrompt)
-      } catch (geminiError) {
-        console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
+  // Feature Flag Check
+  if (process.env.CALL_PROMPT_FLG !== "true") {
+    console.log(`${LOG_PREFIX} CALL_PROMPT_FLG is not true. Using dummy data.`);
+    content = `
+      <section>
+        <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
+        <p>これはダミーのマニフェストデータです。機能フラグが有効な場合にのみLLMによる生成が行われます。</p>
+      </section>
+    `;
+  } else {
+    try {
+      // 1. Try OpenAI
+      content = await generateWithOpenAI(userPrompt)
+    } catch (error: any) {
+      // 2. If 429, try Gemini
+      if (error?.status === 429) {
+        console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
+        try {
+          content = await generateWithGemini(userPrompt)
+        } catch (geminiError) {
+          console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
+        }
+      } else {
+        console.error(`${LOG_PREFIX} OpenAI failed (not 429):`, error)
       }
-    } else {
-      console.error(`${LOG_PREFIX} OpenAI failed (not 429):`, error)
     }
   }
 

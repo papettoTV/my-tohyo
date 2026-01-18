@@ -47,45 +47,57 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
 
   let content: string | undefined
 
-  try {
-    // Prepare Prompt
-    const startDate = sanitizeDate(voteDate)
-    const today = new Date().toISOString().slice(0, 10)
-    
-    // We reuse the prompt generation logic from achievementTemplate.ts
-    // Note: The prompt generator expects 'candidate', 'election', etc.
-    const userPrompt = generateAchievementPrompt({
-      candidate: candidateName,
-      election: electionName,
-      electionType: electionTypeName || "選挙種類",
-      party: partyName || "無所属",
-      startDate,
-      today,
-    })
+  // Feature Flag Check
+  if (process.env.CALL_PROMPT_FLG !== "true") {
+    console.log(`${LOG_PREFIX} CALL_PROMPT_FLG is not true. Using dummy data.`);
+    content = `
+      <ul>
+        <li>タイトル：${candidateName} / 実績・活動 (ダミー)</li>
+        <li>要約：<ul><li>これはダミーの実績データです。</li></ul></li>
+        <li>出典：<ol><li><a href="#">ダミー出典</a></li></ol></li>
+      </ul>
+    `;
+  } else {
+    try {
+      // Prepare Prompt
+      const startDate = sanitizeDate(voteDate)
+      const today = new Date().toISOString().slice(0, 10)
+      
+      // We reuse the prompt generation logic from achievementTemplate.ts
+      // Note: The prompt generator expects 'candidate', 'election', etc.
+      const userPrompt = generateAchievementPrompt({
+        candidate: candidateName,
+        election: electionName,
+        electionType: electionTypeName || "選挙種類",
+        party: partyName || "無所属",
+        startDate,
+        today,
+      })
 
-    // 2. Try OpenAI
-    content = await generateWithOpenAI(userPrompt)
-  } catch (error: any) {
-    // 3. If 429, try Gemini
-    if (error?.status === 429) {
-      console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
-      try {
-        const startDate = sanitizeDate(voteDate)
-        const today = new Date().toISOString().slice(0, 10)
-        const userPrompt = generateAchievementPrompt({
-            candidate: candidateName,
-            election: electionName,
-            electionType: electionTypeName || "選挙種類",
-            party: partyName || "無所属",
-            startDate,
-            today,
-        })
-        content = await generateWithGemini(userPrompt)
-      } catch (geminiError) {
-        console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
+      // 2. Try OpenAI
+      content = await generateWithOpenAI(userPrompt)
+    } catch (error: any) {
+      // 3. If 429, try Gemini
+      if (error?.status === 429) {
+        console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
+        try {
+          const startDate = sanitizeDate(voteDate)
+          const today = new Date().toISOString().slice(0, 10)
+          const userPrompt = generateAchievementPrompt({
+              candidate: candidateName,
+              election: electionName,
+              electionType: electionTypeName || "選挙種類",
+              party: partyName || "無所属",
+              startDate,
+              today,
+          })
+          content = await generateWithGemini(userPrompt)
+        } catch (geminiError) {
+          console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
+        }
+      } else {
+        console.error(`${LOG_PREFIX} OpenAI failed (not 429):`, error)
       }
-    } else {
-      console.error(`${LOG_PREFIX} OpenAI failed (not 429):`, error)
     }
   }
 

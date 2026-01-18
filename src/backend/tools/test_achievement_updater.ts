@@ -14,6 +14,13 @@ async function main() {
         voteDate: new Date().toISOString()
     };
 
+    // Ensure dummy candidate exists
+    await ds.query(
+        "INSERT INTO CANDIDATE (candidate_id, name) VALUES ($1, $2) ON CONFLICT (candidate_id) DO UPDATE SET name = EXCLUDED.name",
+        [testPayload.candidateId, testPayload.candidateName]
+    );
+    console.log("Ensured dummy candidate exists");
+
     // Clean up previous test run
     await ds.query("DELETE FROM ACHIEVEMENT WHERE candidate_id = $1", [testPayload.candidateId]);
     console.log("Cleaned up old test data");

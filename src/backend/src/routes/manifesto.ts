@@ -96,47 +96,57 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 
     let content: string | undefined
 
-    try {
-      const client = new OpenAI({ apiKey })
-      const response = await client.responses.create({
-        model: "gpt-5",
-        reasoning: { effort: "medium" },
-        tools: [{ type: "web_search_preview" }],
-        input: userPrompt,
-      })
-      content = response.output_text?.trim()
-    } catch (error: any) {
-      if (error?.status === 429) {
-        console.warn(
-          "[manifestos/auto-generate] OpenAI 429, falling back to Gemini..."
-        )
-        const geminiKey = process.env.GEMINI_API_KEY
-        console.warn(process.env)
+    if (process.env.CALL_PROMPT_FLG !== "true") {
+      console.log("[manifestos/auto-generate] CALL_PROMPT_FLG is not true. Using dummy data.");
+      content = `
+        <section>
+          <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
+          <p>これはダミーのマニフェストデータです。</p>
+        </section>
+      `;
+    } else {
+      try {
+        const client = new OpenAI({ apiKey })
+        const response = await client.responses.create({
+          model: "gpt-5",
+          reasoning: { effort: "medium" },
+          tools: [{ type: "web_search_preview" }],
+          input: userPrompt,
+        })
+        content = response.output_text?.trim()
+      } catch (error: any) {
+        if (error?.status === 429) {
+          console.warn(
+            "[manifestos/auto-generate] OpenAI 429, falling back to Gemini..."
+          )
+          const geminiKey = process.env.GEMINI_API_KEY
+          console.warn(process.env)
 
-        if (geminiKey) {
-          try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-              model: "gemini-2.0-flash-exp",
-            })
-            const result = await model.generateContent(userPrompt)
-            const response = await result.response
-            content = response.text()
-          } catch (geminiError) {
-            console.error(
-              "[manifestos/auto-generate] Gemini fallback failed:",
-              geminiError
+          if (geminiKey) {
+            try {
+              const genAI = new GoogleGenerativeAI(geminiKey)
+              const model = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash-exp",
+              })
+              const result = await model.generateContent(userPrompt)
+              const response = await result.response
+              content = response.text()
+            } catch (geminiError) {
+              console.error(
+                "[manifestos/auto-generate] Gemini fallback failed:",
+                geminiError
+              )
+              throw error // Throw original error if fallback fails
+            }
+          } else {
+            console.warn(
+              "[manifestos/auto-generate] Gemini skipped (missing API key)"
             )
-            throw error // Throw original error if fallback fails
+            throw error
           }
         } else {
-          console.warn(
-            "[manifestos/auto-generate] Gemini skipped (missing API key)"
-          )
           throw error
         }
-      } else {
-        throw error
       }
     }
 

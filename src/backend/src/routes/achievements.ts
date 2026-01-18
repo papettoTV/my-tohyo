@@ -71,47 +71,57 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
 
     let content: string | undefined
 
-    try {
-      const client = new OpenAI({ apiKey })
-      const response = await client.responses.create({
-        model: "gpt-5",
-        reasoning: { effort: "medium" },
-        tools: [{ type: "web_search_preview" }],
-        input: userPrompt,
-      })
-      content = response.output_text?.trim()
-    } catch (error: any) {
-      if (error?.status === 429) {
-        console.warn(
-          "[achievements/auto-generate] OpenAI 429, falling back to Gemini..."
-        )
-        const geminiKey = process.env.GEMINI_API_KEY
+    if (process.env.CALL_PROMPT_FLG !== "true") {
+      console.log("[achievements/auto-generate] CALL_PROMPT_FLG is not true. Using dummy data.");
+      content = `
+        <ul>
+          <li>タイトル：${candidate} / 実績・活動 (ダミー)</li>
+          <li>要約：<ul><li>これはダミーの実績データです。</li></ul></li>
+        </ul>
+      `;
+    } else {
+      try {
+        const client = new OpenAI({ apiKey })
+        const response = await client.responses.create({
+          model: "gpt-5",
+          reasoning: { effort: "medium" },
+          tools: [{ type: "web_search_preview" }],
+          input: userPrompt,
+        })
+        content = response.output_text?.trim()
+      } catch (error: any) {
+        if (error?.status === 429) {
+          console.warn(
+            "[achievements/auto-generate] OpenAI 429, falling back to Gemini..."
+          )
+          const geminiKey = process.env.GEMINI_API_KEY
 
-        if (geminiKey) {
-          try {
-            const genAI = new GoogleGenerativeAI(geminiKey)
-            const model = genAI.getGenerativeModel({
-              model: "gemini-2.0-flash-exp",
-              tools: [{ googleSearchRetrieval: {} }],
-            })
-            const result = await model.generateContent(userPrompt)
-            const response = await result.response
-            content = response.text()
-          } catch (geminiError) {
-            console.error(
-              "[achievements/auto-generate] Gemini fallback failed:",
-              geminiError
+          if (geminiKey) {
+            try {
+              const genAI = new GoogleGenerativeAI(geminiKey)
+              const model = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash-exp",
+                tools: [{ googleSearchRetrieval: {} }],
+              })
+              const result = await model.generateContent(userPrompt)
+              const response = await result.response
+              content = response.text()
+            } catch (geminiError) {
+              console.error(
+                "[achievements/auto-generate] Gemini fallback failed:",
+                geminiError
+              )
+              throw error 
+            }
+          } else {
+            console.warn(
+              "[achievements/auto-generate] Gemini skipped (missing API key)"
             )
-            throw error 
+            throw error
           }
         } else {
-          console.warn(
-            "[achievements/auto-generate] Gemini skipped (missing API key)"
-          )
           throw error
         }
-      } else {
-        throw error
       }
     }
 
