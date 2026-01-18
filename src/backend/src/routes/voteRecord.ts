@@ -2,6 +2,7 @@ import { Router } from "express"
 import { getDataSource } from "../data-source"
 import { authenticateJWT } from "../middleware/auth"
 import { scheduleManifestoAutoUpdate } from "../services/manifestoAutoUpdater"
+import { scheduleAchievementAutoUpdate } from "../services/achievementAutoUpdater"
 
 const router = Router()
 
@@ -211,6 +212,15 @@ router.post("/", authenticateJWT, async (req, res) => {
     const voteId = insertVote[0].vote_id
 
     scheduleManifestoAutoUpdate({
+      candidateId,
+      candidateName: canonicalCandidateName,
+      electionName: normalizedElectionName,
+      partyName: normalizedPartyName,
+      electionTypeName,
+      voteDate: vote_date,
+    })
+
+    scheduleAchievementAutoUpdate({
       candidateId,
       candidateName: canonicalCandidateName,
       electionName: normalizedElectionName,
