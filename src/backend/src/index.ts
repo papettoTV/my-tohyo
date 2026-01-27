@@ -1,22 +1,21 @@
-import "dotenv/config"
+import * as dotenv from "dotenv"
+import { existsSync } from "fs"
+import { resolve } from "path"
+
+// .env.local があれば優先して読み込み、その後 .env を読み込む
+// dotenv は既存の環境変数を上書きしないため、先に読み込んだものが優先される
+const envLocalPath = resolve(__dirname, "../.env.local")
+if (existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath })
+}
+dotenv.config()
+
 import express from "express"
 import cors from "cors"
 
 const app = express()
 app.use(cors())
 app.use(express.json())
-
-import * as dotenv from "dotenv"
-import { existsSync } from "fs"
-import { resolve } from "path"
-
-// .env.local があれば優先して読み込む
-const envLocalPath = resolve(__dirname, "../.env.local")
-if (existsSync(envLocalPath)) {
-  dotenv.config({ path: envLocalPath })
-} else {
-  dotenv.config()
-}
 
 import userRouter from "./routes/user"
 import socialAccountRouter from "./routes/socialAccount"
