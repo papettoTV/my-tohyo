@@ -13,6 +13,7 @@ const seedPartyNames = [
   "社会民主党",
   "参政党",
   "NHK党",
+  "無所属",
 ]
 
 async function main() {
@@ -21,6 +22,24 @@ async function main() {
       await AppDataSource.initialize()
     }
     const repo = AppDataSource.getRepository(Party)
+
+    // 現在のDBレコードを取得
+    const allRecords = await repo.find()
+    let removed = 0
+    let skipped = 0
+    for (const record of allRecords) {
+      // シードリストに含まれていない場合は削除を試みる
+      if (!seedPartyNames.includes(record.name)) {
+        try {
+          await repo.remove(record)
+          removed++
+        } catch (err) {
+          // 外部キー制約などで削除できない場合はスキップ
+          console.warn(`削除をスキップしました (参照されている可能性があります): ${record.name}`)
+          skipped++
+        }
+      }
+    }
 
     let inserted = 0
     for (const name of seedPartyNames) {
@@ -33,7 +52,7 @@ async function main() {
     }
 
     const total = await repo.count()
-    console.log(`政党シード完了: ${inserted}件追加 / 合計 ${total}件`)
+    console.log(`政党シード完了: ${inserted}件追加 / ${removed}件削除 / ${skipped}件スキップ / 合計 ${total}件`)
   } catch (err) {
     console.error("政党シードに失敗:", err)
     process.exit(1)
