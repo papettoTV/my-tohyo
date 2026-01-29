@@ -57,7 +57,7 @@ CREATE TABLE ACHIEVEMENT (
 CREATE TABLE VOTE_RECORD (
   vote_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
-  candidate_name VARCHAR(100) NOT NULL,
+  candidate_name VARCHAR(100),
   election_name VARCHAR(150) NOT NULL,
   election_type_id INTEGER NOT NULL,
   vote_date DATE NOT NULL,

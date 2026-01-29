@@ -88,9 +88,6 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     const normalizedCandidateName =
       typeof candidate_name === "string" ? candidate_name.trim() : ""
-    if (!normalizedCandidateName) {
-      return res.status(400).json({ message: "candidate_name is required" })
-    }
 
     const normalizedElectionName =
       typeof election_name === "string" ? election_name.trim() : ""
@@ -141,38 +138,41 @@ router.post("/", authenticateJWT, async (req, res) => {
       }
     }
 
-    // Ensure candidate master exists and reflects latest party information
-    const candidateRows = await ds.query(
-      `SELECT candidate_id, party_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-      [normalizedCandidateName]
-    )
-    let candidateId: number
+    let candidateId: number | null = null
     let canonicalCandidateName = normalizedCandidateName
 
-    if (candidateRows && candidateRows.length > 0) {
-      const existing = candidateRows[0]
-      candidateId = existing.candidate_id
-      if (existing.name) {
-        canonicalCandidateName = existing.name
-      }
-      if (
-        normalizedPartyId !== null &&
-        existing.party_id !== normalizedPartyId
-      ) {
-        await ds.query(
-          `UPDATE CANDIDATE SET party_id = $1 WHERE candidate_id = $2`,
-          [normalizedPartyId, candidateId]
-        )
-      }
-    } else {
-      const inserted = await ds.query(
-        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)
-         RETURNING candidate_id, name`,
-        [normalizedCandidateName, normalizedPartyId]
+    if (normalizedCandidateName) {
+      // Ensure candidate master exists and reflects latest party information
+      const candidateRows = await ds.query(
+        `SELECT candidate_id, party_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+        [normalizedCandidateName]
       )
-      candidateId = inserted[0].candidate_id
-      if (inserted[0]?.name) {
-        canonicalCandidateName = inserted[0].name
+
+      if (candidateRows && candidateRows.length > 0) {
+        const existing = candidateRows[0]
+        candidateId = existing.candidate_id
+        if (existing.name) {
+          canonicalCandidateName = existing.name
+        }
+        if (
+          normalizedPartyId !== null &&
+          existing.party_id !== normalizedPartyId
+        ) {
+          await ds.query(
+            `UPDATE CANDIDATE SET party_id = $1 WHERE candidate_id = $2`,
+            [normalizedPartyId, candidateId]
+          )
+        }
+      } else {
+        const inserted = await ds.query(
+          `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, $2, NULL, NULL)
+           RETURNING candidate_id, name`,
+          [normalizedCandidateName, normalizedPartyId]
+        )
+        candidateId = inserted[0].candidate_id
+        if (inserted[0]?.name) {
+          canonicalCandidateName = inserted[0].name
+        }
       }
     }
 
@@ -211,23 +211,25 @@ router.post("/", authenticateJWT, async (req, res) => {
     )
     const voteId = insertVote[0].vote_id
 
-    scheduleManifestoAutoUpdate({
-      candidateId,
-      candidateName: canonicalCandidateName,
-      electionName: normalizedElectionName,
-      partyName: normalizedPartyName,
-      electionTypeName,
-      voteDate: vote_date,
-    })
+    if (candidateId) {
+      scheduleManifestoAutoUpdate({
+        candidateId,
+        candidateName: canonicalCandidateName,
+        electionName: normalizedElectionName,
+        partyName: normalizedPartyName,
+        electionTypeName,
+        voteDate: vote_date,
+      })
 
-    scheduleAchievementAutoUpdate({
-      candidateId,
-      candidateName: canonicalCandidateName,
-      electionName: normalizedElectionName,
-      partyName: normalizedPartyName,
-      electionTypeName,
-      voteDate: vote_date,
-    })
+      scheduleAchievementAutoUpdate({
+        candidateId,
+        candidateName: canonicalCandidateName,
+        electionName: normalizedElectionName,
+        partyName: normalizedPartyName,
+        electionTypeName,
+        voteDate: vote_date,
+      })
+    }
 
     return res.status(201).json({ vote_id: voteId })
   } catch (e) {
