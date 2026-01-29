@@ -104,6 +104,12 @@ export default function RegisterPage() {
       return
     }
 
+    if (!selectedParty) {
+      alert("政党名を選択してください")
+      setLoading(false)
+      return
+    }
+
     // Validate SNS URL if provided
     if (socialUrl && socialUrl.trim() !== "") {
       try {
@@ -287,7 +293,7 @@ export default function RegisterPage() {
 
                 {/* Candidate Name (free text) */}
                 <div className="space-y-2">
-                  <Label htmlFor="candidate">候補者名</Label>
+                  <Label htmlFor="candidate">候補者名（任意）</Label>
                   <Input
                     id="candidate"
                     placeholder="例: 山田花子"
