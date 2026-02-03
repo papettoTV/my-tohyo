@@ -45,15 +45,15 @@ router.get("/", authenticateJWT, async (req, res) => {
              vr.election_name,
              vr.election_type_id,
              vr.notes,
-             COALESCE(vr.party_name, p.name, p_vote.name) AS party_name,
+             COALESCE(p_vote.name, p.name) AS party_name,
+             vr.party_id,
              c.candidate_id,
-             COALESCE(c.party_id, p_vote.party_id) AS party_id,
              et.name AS election_type_name
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
-      LEFT JOIN PARTY p_vote ON LOWER(p_vote.name) = LOWER(vr.party_name)
+      LEFT JOIN PARTY p_vote ON p_vote.party_id = vr.party_id
       WHERE vr.user_id = $1
       ORDER BY vr.vote_id DESC
     `,
@@ -192,7 +192,7 @@ router.post("/", authenticateJWT, async (req, res) => {
          election_name,
          election_type_id,
          vote_date,
-         party_name,
+         party_id,
          social_post_url,
          photo_url,
          notes
@@ -204,7 +204,7 @@ router.post("/", authenticateJWT, async (req, res) => {
         normalizedElectionName,
         normalizedElectionTypeId,
         vote_date,
-        normalizedPartyName,
+        normalizedPartyId,
         social_post_url || null,
         photo_url || null,
         notes || null,
@@ -261,9 +261,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              vr.election_name,
              vr.election_type_id,
              vr.notes,
-             COALESCE(vr.party_name, p.name, p_vote.name) AS party_name,
+             COALESCE(p_vote.name, p.name) AS party_name,
+             vr.party_id,
              c.candidate_id,
-             COALESCE(c.party_id, p_vote.party_id) AS party_id,
              et.name AS election_type_name,
              m.content_id AS manifesto_content_id,
              m.candidate_id AS manifesto_candidate_id,
@@ -277,13 +277,13 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
-      LEFT JOIN PARTY p_vote ON LOWER(p_vote.name) = LOWER(vr.party_name)
+      LEFT JOIN PARTY p_vote ON p_vote.party_id = vr.party_id
       LEFT JOIN CANDIDATE_CONTENT m
-        ON (m.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND m.party_id = p_vote.party_id))
+        ON (m.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND m.party_id = vr.party_id))
        AND LOWER(m.election_name) = LOWER(vr.election_name)
        AND m.type = 'manifesto'
       LEFT JOIN CANDIDATE_CONTENT a
-        ON (a.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND a.party_id = p_vote.party_id))
+        ON (a.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND a.party_id = vr.party_id))
        AND LOWER(a.election_name) = LOWER(vr.election_name)
        AND a.type = 'achievement'
       WHERE vr.vote_id = $1 AND vr.user_id = $2

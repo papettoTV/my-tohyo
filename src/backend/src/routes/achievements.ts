@@ -168,6 +168,22 @@ router.post("/", authenticateJWT, async (req, res) => {
     let canonicalCandidateName: string = candidate || party_name || "不明"
 
     if (candidate) {
+        // すでに実績があればそれを返す
+        const rows = await ds.query(
+          `SELECT content FROM CANDIDATE_CONTENT
+           WHERE candidate_name = $1 AND election_name = $2 AND type = 'achievement' LIMIT 1`,
+          [candidate, election]
+        )
+
+        if (rows && rows.length > 0) {
+          return res.status(200).json({
+            candidate_id: null,
+            candidate_name: candidate,
+            election_name: election,
+            achievements: rows[0].content
+          })
+        }
+
       const candidateRows = await ds.query(
         `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
         [candidate]
@@ -177,7 +193,6 @@ router.post("/", authenticateJWT, async (req, res) => {
         candidateId = candidateRows[0].candidate_id
         canonicalCandidateName = candidateRows[0].name
       } else {
-        // 候補者マスタ生成 (Manifesto側と合わせる)
         const insertedCandidateRows = await ds.query(
           `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
            RETURNING candidate_id, name`,

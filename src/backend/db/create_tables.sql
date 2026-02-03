@@ -15,25 +15,6 @@ CREATE TABLE SOCIAL_ACCOUNT (
   FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );
 
-CREATE TABLE ELECTION_TYPE (
-  election_type_id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE PARTY (
-  party_id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE CANDIDATE (
-  candidate_id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  party_id INTEGER,
-  manifesto_url VARCHAR(255),
-  achievements TEXT,
-  FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
-);
-
 CREATE TABLE CANDIDATE_CONTENT (
   content_id SERIAL PRIMARY KEY,
   type VARCHAR(20) NOT NULL, -- 'manifesto' or 'achievement'
@@ -52,14 +33,11 @@ CREATE TABLE VOTE_RECORD (
   user_id INTEGER NOT NULL,
   candidate_name VARCHAR(100),
   election_name VARCHAR(150) NOT NULL,
-  election_type_id INTEGER NOT NULL,
+  election_type_id INTEGER NOT NULL REFERENCES ELECTION_TYPE(election_type_id) ON DELETE RESTRICT,
   vote_date DATE NOT NULL,
-  party_name VARCHAR(100),
-  party_id INTEGER,
+  party_id INTEGER REFERENCES PARTY(party_id) ON DELETE SET NULL,
   photo_url VARCHAR(255),
   social_post_url VARCHAR(255),
   notes TEXT,
-  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE RESTRICT,
-  FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );

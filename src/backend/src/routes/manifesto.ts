@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 
 import { authenticateJWT } from "../middleware/auth"
 import { getDataSource } from "../data-source"
-import { ManifestoStatus } from "../models/Manifesto"
+import { ManifestoStatus } from "../models/CandidateContent"
 import { generateManifestoPrompt } from "../prompts/manifestoTemplate"
 
 const router = Router()
@@ -254,8 +254,8 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     // 既存データの検索
     const existingContentRows = await ds.query(
-      `SELECT content, status FROM CANDIDATE_CONTENT
-       WHERE candidate_name = $1 AND election_name = $2 AND type = 'manifesto'`,
+      `SELECT cc.content, cc.status FROM CANDIDATE_CONTENT cc
+       WHERE cc.candidate_name = $1 AND cc.election_name = $2 AND cc.type = 'manifesto'`,
       [candidate, election]
     )
 
@@ -270,7 +270,7 @@ router.post("/", authenticateJWT, async (req, res) => {
       `
         INSERT INTO CANDIDATE_CONTENT (type, candidate_id, party_id, candidate_name, election_name, content, content_format, status)
         VALUES ('manifesto', $1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (candidate_id, election_name, type)
+        ON CONFLICT (candidate_id, party_id, election_name, type)
         DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format, status = EXCLUDED.status
         RETURNING content_id, status
       `,
