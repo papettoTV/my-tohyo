@@ -48,6 +48,7 @@ erDiagram
         int election_type_id FK "選挙種類ID"
         date vote_date "投票日"
         string party_name "政党名"
+        int party_id FK "政党ID"
         string photo_url "投票写真URL"
         string social_post_url "SNS投稿URL"
         text notes "メモ"
@@ -57,6 +58,7 @@ erDiagram
     USER ||--o{ VOTE_RECORD : "投票"
     ELECTION_TYPE ||--o{ VOTE_RECORD : "分類"
     CANDIDATE ||--o{ VOTE_RECORD : "参考"
+    PARTY ||--o{ VOTE_RECORD : "投票（政党指定）"
     CANDIDATE ||--o{ CANDIDATE_CONTENT : "関連"
     PARTY ||--o{ CANDIDATE_CONTENT : "関連（政党単位）"
     PARTY ||--o{ CANDIDATE : "所属"
@@ -89,13 +91,14 @@ erDiagram
   - コンテンツ ID（主キー）、種別（manifesto/achievement）、候補者 ID（外部キー・任意）、政党 ID（外部キー・任意）、選挙名、名称（候補者名または政党名）、形式（markdown もしくは html）、本文、更新状況ステータス（manifesto のみ：null=未更新 / PROGRESS=更新中 / COMPLETE=更新済み）。
 
 - **VOTE_RECORD（投票記録）**
-  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名（任意）、選挙名、選挙種類 ID（外部キー）、投票日、政党名、投票写真 URL、SNS 投稿 URL、メモ
+  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名（任意）、選挙名、選挙種類 ID（外部キー）、投票日、政党名、政党 ID（外部キー）、投票写真 URL、SNS 投稿 URL、メモ
 
 ## リレーション
 
 - ユーザーは複数のソーシャルアカウントを持つ（1 対多）
 - ユーザーは複数の投票記録を持つ（1 対多）
 - 選挙種類は複数の投票記録を持つ（1 対多）
+- 政党は複数の投票記録を持つ（1 対多・政党投票対応）
 - 候補者マスタは参考情報として維持し、投票記録は候補者名を直接保持
 - 政党は複数の候補者を持つ（1 対多）
 - コンテンツ（CANDIDATE_CONTENT）は候補者または政党と紐づき、選挙名・種別と組み合わせて一意に管理される

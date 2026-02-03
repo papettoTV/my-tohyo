@@ -55,9 +55,11 @@ CREATE TABLE VOTE_RECORD (
   election_type_id INTEGER NOT NULL,
   vote_date DATE NOT NULL,
   party_name VARCHAR(100),
+  party_id INTEGER,
   photo_url VARCHAR(255),
   social_post_url VARCHAR(255),
   notes TEXT,
   FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE RESTRICT
+  FOREIGN KEY (election_type_id) REFERENCES ELECTION_TYPE(election_type_id) ON DELETE RESTRICT,
+  FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
 );
