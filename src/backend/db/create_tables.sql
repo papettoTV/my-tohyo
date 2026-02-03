@@ -34,8 +34,9 @@ CREATE TABLE CANDIDATE (
   FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
 );
 
-CREATE TABLE MANIFESTO (
-  manifesto_id SERIAL PRIMARY KEY,
+CREATE TABLE CANDIDATE_CONTENT (
+  content_id SERIAL PRIMARY KEY,
+  type VARCHAR(20) NOT NULL, -- 'manifesto' or 'achievement'
   election_name VARCHAR(150) NOT NULL,
   candidate_id INTEGER REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE,
   party_id INTEGER REFERENCES PARTY(party_id) ON DELETE CASCADE,
@@ -43,18 +44,7 @@ CREATE TABLE MANIFESTO (
   content TEXT NOT NULL,
   content_format VARCHAR(20) NOT NULL DEFAULT 'markdown', -- 'markdown' or 'html'
   status VARCHAR(20), -- 'PROGRESS' or 'COMPLETE'
-  UNIQUE (candidate_id, party_id, election_name)
-);
-
-CREATE TABLE ACHIEVEMENT (
-  achievement_id SERIAL PRIMARY KEY,
-  candidate_id INTEGER REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE,
-  party_id INTEGER REFERENCES PARTY(party_id) ON DELETE CASCADE,
-  election_name VARCHAR(150) NOT NULL,
-  candidate_name VARCHAR(100) NOT NULL,
-  content_format VARCHAR(20) NOT NULL DEFAULT 'markdown', -- 'markdown' or 'html'
-  content TEXT NOT NULL,
-  UNIQUE (candidate_id, party_id, election_name)
+  UNIQUE (candidate_id, party_id, election_name, type)
 );
 
 CREATE TABLE VOTE_RECORD (

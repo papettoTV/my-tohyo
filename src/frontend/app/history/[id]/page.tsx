@@ -53,7 +53,7 @@ import { format } from "date-fns"
 type ManifestoStatus = "PROGRESS" | "COMPLETE"
 
 type ManifestoDetail = {
-  manifesto_id: number
+  content_id: number
   election_name: string
   candidate_name: string
   content: string
@@ -63,7 +63,7 @@ type ManifestoDetail = {
 }
 
 type AchievementDetail = {
-  achievement_id: number
+  content_id: number
   election_name: string
   candidate_name: string
   content: string
@@ -629,7 +629,7 @@ export default function HistoryDetailPage() {
             return {
                 ...prev,
                 achievement: {
-                    achievement_id: 0,
+                    content_id: 0,
                     content: newContent,
                     content_format: "html",
                     candidate_name: candidate,
@@ -708,7 +708,7 @@ export default function HistoryDetailPage() {
       }
 
       const data = (await response.json()) as {
-        manifesto_id?: number
+        content_id?: number
         candidate_id?: number
         candidate_name?: string
         content?: string
@@ -717,7 +717,7 @@ export default function HistoryDetailPage() {
       }
 
       const updatedManifesto = {
-        manifesto_id: data?.manifesto_id ?? vote.manifesto?.manifesto_id ?? 0,
+        content_id: data?.content_id ?? vote.manifesto?.content_id ?? 0,
         election_name: vote.election_name || election,
         candidate_name:
           data?.candidate_name || vote.candidate_name || candidate,

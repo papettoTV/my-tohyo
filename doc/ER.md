@@ -29,27 +29,21 @@ erDiagram
         int party_id FK "所属政党"
         string manifesto_url "マニフェストURL"
     }
-    MANIFESTO {
-        int manifesto_id PK "マニフェストID"
-        int candidate_id FK "候補者ID"
+    CANDIDATE_CONTENT {
+        int content_id PK "コンテンツID"
+        string type "コンテンツ種別 (manifesto/achievement)"
+        int candidate_id FK "候補者ID (任意)"
+        int party_id FK "政党ID (任意)"
         string election_name "選挙名"
-        string candidate_name "候補者名"
+        string candidate_name "名称（候補者名または政党名）"
         string content_format "形式 (markdown/html)"
-        text content "マニフェスト本文"
-        string status "更新状況 (null/PROGRESS/COMPLETE)"
-    }
-    ACHIEVEMENT {
-        int achievement_id PK "実績ID"
-        int candidate_id FK "候補者ID"
-        string election_name "選挙名"
-        string candidate_name "候補者名"
-        string content_format "形式 (markdown/html)"
-        text content "実績本文"
+        text content "本文"
+        string status "更新状況 (manifestoのみ: null/PROGRESS/COMPLETE)"
     }
     VOTE_RECORD {
         int vote_id PK "投票記録ID"
         int user_id FK "ユーザーID"
-        string candidate_name "候補者名"
+        string candidate_name "候補者名 (任意)"
         string election_name "選挙名"
         int election_type_id FK "選挙種類ID"
         date vote_date "投票日"
@@ -63,8 +57,8 @@ erDiagram
     USER ||--o{ VOTE_RECORD : "投票"
     ELECTION_TYPE ||--o{ VOTE_RECORD : "分類"
     CANDIDATE ||--o{ VOTE_RECORD : "参考"
-    CANDIDATE ||--o{ MANIFESTO : "公約"
-    CANDIDATE ||--o{ ACHIEVEMENT : "実績"
+    CANDIDATE ||--o{ CANDIDATE_CONTENT : "関連"
+    PARTY ||--o{ CANDIDATE_CONTENT : "関連（政党単位）"
     PARTY ||--o{ CANDIDATE : "所属"
 ```
 
@@ -90,16 +84,12 @@ erDiagram
 
   - 候補者 ID（主キー）、氏名、所属政党（外部キー・任意）、マニフェスト URL
 
-- **MANIFESTO（マニフェスト）**
+- **CANDIDATE_CONTENT（コンテンツ: マニフェスト・実績）**
 
-  - マニフェスト ID（主キー）、候補者 ID（外部キー）、選挙名、候補者名、形式（markdown もしくは html）、マニフェスト本文、更新状況ステータス（null=未更新 / PROGRESS=更新中 / COMPLETE=更新済み）。候補者 ID と選挙名の組み合わせで一意
-
-- **ACHIEVEMENT（実績・情報）**
-
-  - 実績 ID（主キー）、候補者 ID（外部キー）、選挙名、候補者名、形式（markdown もしくは html）、実績本文。候補者 ID と選挙名の組み合わせで一意
+  - コンテンツ ID（主キー）、種別（manifesto/achievement）、候補者 ID（外部キー・任意）、政党 ID（外部キー・任意）、選挙名、名称（候補者名または政党名）、形式（markdown もしくは html）、本文、更新状況ステータス（manifesto のみ：null=未更新 / PROGRESS=更新中 / COMPLETE=更新済み）。
 
 - **VOTE_RECORD（投票記録）**
-  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名、選挙名、選挙種類 ID（外部キー）、投票日、政党名、投票写真 URL、SNS 投稿 URL、メモ
+  - 投票記録 ID（主キー）、ユーザー ID（外部キー）、候補者名（任意）、選挙名、選挙種類 ID（外部キー）、投票日、政党名、投票写真 URL、SNS 投稿 URL、メモ
 
 ## リレーション
 
@@ -108,5 +98,4 @@ erDiagram
 - 選挙種類は複数の投票記録を持つ（1 対多）
 - 候補者マスタは参考情報として維持し、投票記録は候補者名を直接保持
 - 政党は複数の候補者を持つ（1 対多）
-- マニフェストは候補者マスタ（CANDIDATE）と紐づき、候補者 ID と選挙名で一意に管理される
-- 実績（ACHIEVEMENT）は候補者マスタ（CANDIDATE）と紐づき、候補者 ID と選挙名で一意に管理される
+- コンテンツ（CANDIDATE_CONTENT）は候補者または政党と紐づき、選挙名・種別と組み合わせて一意に管理される

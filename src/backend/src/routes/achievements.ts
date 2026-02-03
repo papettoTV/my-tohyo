@@ -200,35 +200,19 @@ router.post("/", authenticateJWT, async (req, res) => {
       partyId = partyRows[0].party_id
     }
 
-    // 実績を ACHIEVEMENT テーブルに保存 (Upsert)
-    // 以前の CANDIDATE への保存はやめる
-    if (candidateId) {
-      await ds.query(
-        `
-          INSERT INTO ACHIEVEMENT (candidate_id, party_id, candidate_name, election_name, content, content_format)
-          VALUES ($1, $2, $3, $4, $5, 'html')
-          ON CONFLICT (candidate_id, election_name)
-          DO UPDATE SET
-            candidate_name = EXCLUDED.candidate_name,
-            content = EXCLUDED.content,
-            content_format = EXCLUDED.content_format
-        `,
-        [candidateId, partyId, canonicalCandidateName, election, body]
-      )
-    } else {
-      await ds.query(
-        `
-          INSERT INTO ACHIEVEMENT (candidate_id, party_id, candidate_name, election_name, content, content_format)
-          VALUES (NULL, $1, $2, $3, $4, 'html')
-          ON CONFLICT (party_id, election_name)
-          DO UPDATE SET
-            candidate_name = EXCLUDED.candidate_name,
-            content = EXCLUDED.content,
-            content_format = EXCLUDED.content_format
-        `,
-        [partyId, canonicalCandidateName, election, body]
-      )
-    }
+    // 実績を CANDIDATE_CONTENT テーブルに保存 (Upsert)
+    await ds.query(
+      `
+        INSERT INTO CANDIDATE_CONTENT (type, candidate_id, party_id, candidate_name, election_name, content, content_format)
+        VALUES ('achievement', $1, $2, $3, $4, $5, 'html')
+        ON CONFLICT (candidate_id, party_id, election_name, type)
+        DO UPDATE SET
+          candidate_name = EXCLUDED.candidate_name,
+          content = EXCLUDED.content,
+          content_format = EXCLUDED.content_format
+      `,
+      [candidateId, partyId, canonicalCandidateName, election, body]
+    )
 
     return res.status(200).json({
       candidate_id: candidateId,

@@ -265,12 +265,12 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              c.candidate_id,
              COALESCE(c.party_id, p_vote.party_id) AS party_id,
              et.name AS election_type_name,
-             m.manifesto_id,
+             m.content_id AS manifesto_content_id,
              m.candidate_id AS manifesto_candidate_id,
              m.content AS manifesto_content,
              m.content_format AS manifesto_content_format,
              m.status AS manifesto_status,
-             a.achievement_id,
+             a.content_id AS achievement_content_id,
              a.content AS achievement_content,
              a.content_format AS achievement_content_format
       FROM VOTE_RECORD vr
@@ -278,12 +278,14 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
       LEFT JOIN PARTY p_vote ON LOWER(p_vote.name) = LOWER(vr.party_name)
-      LEFT JOIN MANIFESTO m
-        ON (m.candidate_id = c.candidate_id OR (c.candidate_id IS NULL AND m.party_id = p_vote.party_id))
+      LEFT JOIN CANDIDATE_CONTENT m
+        ON (m.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND m.party_id = p_vote.party_id))
        AND LOWER(m.election_name) = LOWER(vr.election_name)
-      LEFT JOIN ACHIEVEMENT a
-        ON (a.candidate_id = c.candidate_id OR (c.candidate_id IS NULL AND a.party_id = p_vote.party_id))
+       AND m.type = 'manifesto'
+      LEFT JOIN CANDIDATE_CONTENT a
+        ON (a.candidate_id = c.candidate_id OR (vr.candidate_name IS NULL AND a.party_id = p_vote.party_id))
        AND LOWER(a.election_name) = LOWER(vr.election_name)
+       AND a.type = 'achievement'
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,
       [id, userId]
@@ -295,21 +297,21 @@ router.get("/:id", authenticateJWT, async (req, res) => {
 
     const [record] = rows
     const {
-      manifesto_id: manifestoId,
+      manifesto_content_id: manifestoContentId,
       manifesto_candidate_id: manifestoCandidateId,
       manifesto_content: manifestoContent,
       manifesto_content_format: manifestoContentFormat,
       manifesto_status: manifestoStatus,
-      achievement_id: achievementId,
+      achievement_content_id: achievementContentId,
       achievement_content: achievementContent,
       achievement_content_format: achievementContentFormat,
       ...rest
     } = record
 
     const manifesto =
-      manifestoId !== null && manifestoId !== undefined
+      manifestoContentId !== null && manifestoContentId !== undefined
         ? {
-            manifesto_id: manifestoId,
+            content_id: manifestoContentId,
             election_name: rest.election_name,
             candidate_name: rest.candidate_name,
             candidate_id: manifestoCandidateId ?? null,
@@ -320,9 +322,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
         : null
 
     const achievement =
-       achievementId !== null && achievementId !== undefined
+       achievementContentId !== null && achievementContentId !== undefined
          ? {
-            achievement_id: achievementId,
+            content_id: achievementContentId,
             election_name: rest.election_name,
             candidate_name: rest.candidate_name,
             content: achievementContent,
