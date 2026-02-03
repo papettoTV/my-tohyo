@@ -45,14 +45,15 @@ router.get("/", authenticateJWT, async (req, res) => {
              vr.election_name,
              vr.election_type_id,
              vr.notes,
-             COALESCE(vr.party_name, p.name) AS party_name,
+             COALESCE(vr.party_name, p.name, p_vote.name) AS party_name,
              c.candidate_id,
-             c.party_id,
+             COALESCE(c.party_id, p_vote.party_id) AS party_id,
              et.name AS election_type_name
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
+      LEFT JOIN PARTY p_vote ON LOWER(p_vote.name) = LOWER(vr.party_name)
       WHERE vr.user_id = $1
       ORDER BY vr.vote_id DESC
     `,
@@ -260,9 +261,9 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              vr.election_name,
              vr.election_type_id,
              vr.notes,
-             COALESCE(vr.party_name, p.name) AS party_name,
+             COALESCE(vr.party_name, p.name, p_vote.name) AS party_name,
              c.candidate_id,
-             c.party_id,
+             COALESCE(c.party_id, p_vote.party_id) AS party_id,
              et.name AS election_type_name,
              m.manifesto_id,
              m.candidate_id AS manifesto_candidate_id,
@@ -276,11 +277,12 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
       LEFT JOIN PARTY p ON p.party_id = c.party_id
+      LEFT JOIN PARTY p_vote ON LOWER(p_vote.name) = LOWER(vr.party_name)
       LEFT JOIN MANIFESTO m
-        ON m.candidate_id = c.candidate_id
+        ON (m.candidate_id = c.candidate_id OR (c.candidate_id IS NULL AND m.party_id = p_vote.party_id))
        AND LOWER(m.election_name) = LOWER(vr.election_name)
       LEFT JOIN ACHIEVEMENT a
-        ON a.candidate_id = c.candidate_id
+        ON (a.candidate_id = c.candidate_id OR (c.candidate_id IS NULL AND a.party_id = p_vote.party_id))
        AND LOWER(a.election_name) = LOWER(vr.election_name)
       WHERE vr.vote_id = $1 AND vr.user_id = $2
       `,

@@ -27,9 +27,11 @@ export function scheduleManifestoAutoUpdate(payload: AutoUpdatePayload) {
 async function autoUpdateManifesto(payload: AutoUpdatePayload) {
   const { candidateId, candidateName, electionName } = payload
   const ds = await getDataSource()
+  const partyId = await fetchCandidatePartyId(ds, candidateId)
 
   await ensureManifestoRow(ds, {
     candidateId,
+    partyId,
     electionName,
     candidateName,
     status: "PROGRESS",
@@ -104,7 +106,7 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
 
   if (!content) {
     console.warn(`${LOG_PREFIX} content generation failed or empty`)
-    await updateStatus(ds, candidateId, electionName, null)
+    await updateStatus(ds, candidateId, partyId, electionName, null)
     return
   }
 
@@ -117,13 +119,14 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
                status = $2,
                candidate_name = $3
          WHERE candidate_id = $4
-           AND election_name = $5
+           AND party_id IS NOT DISTINCT FROM $5
+           AND election_name = $6
       `,
-      [content, "COMPLETE", candidateName, candidateId, electionName]
+      [content, "COMPLETE", candidateName, candidateId, partyId, electionName]
     )
   } catch (dbError) {
     console.error(`${LOG_PREFIX} DB update failed`, dbError)
-    await updateStatus(ds, candidateId, electionName, null)
+    await updateStatus(ds, candidateId, partyId, electionName, null)
   }
 }
 
@@ -173,12 +176,13 @@ async function ensureManifestoRow(
   ds: Awaited<ReturnType<typeof getDataSource>>,
   params: {
     candidateId: number
+    partyId: number | null
     electionName: string
     candidateName: string
     status: ManifestoStatus
   }
 ) {
-  const { candidateId, electionName, candidateName, status } = params
+  const { candidateId, partyId, electionName, candidateName, status } = params
   // Placeholder content must be non-null if column is not nullable, 
   // currently schema might allow null or we use a loading string.
   // Using a simple loading indicator compatible with HTML format.
@@ -188,25 +192,27 @@ async function ensureManifestoRow(
     `
       INSERT INTO MANIFESTO (
         candidate_id,
+        party_id,
         candidate_name,
         election_name,
         content,
         content_format,
         status
       )
-      VALUES ($1, $2, $3, $4, 'html', $5)
-      ON CONFLICT (candidate_id, election_name)
+      VALUES ($1, $2, $3, $4, $5, 'html', $6)
+      ON CONFLICT (candidate_id, party_id, election_name)
       DO UPDATE SET
         candidate_name = EXCLUDED.candidate_name,
         status = EXCLUDED.status
     `,
-    [candidateId, candidateName, electionName, PLACEHOLDER_CONTENT, status]
+    [candidateId, partyId, candidateName, electionName, PLACEHOLDER_CONTENT, status]
   )
 }
 
 async function updateStatus(
   ds: Awaited<ReturnType<typeof getDataSource>>,
   candidateId: number,
+  partyId: number | null,
   electionName: string,
   status: ManifestoStatus | null
 ) {
@@ -215,9 +221,20 @@ async function updateStatus(
       UPDATE MANIFESTO
          SET status = $3
        WHERE candidate_id = $1
-         AND election_name = $2
+         AND party_id IS NOT DISTINCT FROM $2
+         AND election_name = $4
     `,
-    [candidateId, electionName, status]
+    [candidateId, partyId, status, electionName]
   )
 }
 
+async function fetchCandidatePartyId(
+  ds: Awaited<ReturnType<typeof getDataSource>>,
+  candidateId: number
+): Promise<number | null> {
+  const rows = await ds.query(
+    `SELECT party_id FROM CANDIDATE WHERE candidate_id = $1`,
+    [candidateId]
+  )
+  return rows?.[0]?.party_id ?? null
+}

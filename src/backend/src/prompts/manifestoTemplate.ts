@@ -43,8 +43,11 @@ export const generateManifestoPrompt = ({
     .replace(/{{SOURCE3}}/g, source3)
     .replace(/{{TODAY}}/g, today)
 
-  return `役割: あなたは中立な編集者です。以下の「検証済み事実情報」に加え、必ず web_search を用いて一次・公的ソースを優先的に収集し、推測や創作をせずに、${derivedYear}年に出馬の「${candidate}」のマニフェストを、読みやすくメリハリのあるHTML形式で作成してください。
+  const isCandidateMissing = candidate === "情報未提供"
+  const targetExpression = isCandidateMissing ? `所属政党「${derivedParty}」` : `出馬の「${candidate}」`
 
+  return `役割: あなたは中立な編集者です。以下の「検証済み事実情報」に加え、必ず web_search を用いて一次・公的ソースを優先的に収集し、推測や創作をせずに、${derivedYear}年の${targetExpression}のマニフェストを、読みやすくメリハリのあるHTML形式で作成してください。
+${isCandidateMissing ? "\n※候補者が特定されていないため、この選挙における政党公約（マニフェスト）を中心にまとめてください。\n" : ""}
 出力制約:
 - HTMLタグ（<h3>, <p>, <ul>, <ol>, <li>, <strong>, <a>, <time>, <q>, <div>, <section>）を使用。
 - Tailwind CSSクラスで見た目を整えること（例: text-lg, font-bold, mb-2, list-disc, pl-5, space-y-2など）。

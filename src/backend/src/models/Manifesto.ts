@@ -12,7 +12,7 @@ export type ManifestoFormat = "html" | "markdown"
 export type ManifestoStatus = "PROGRESS" | "COMPLETE"
 
 @Entity({ name: "manifesto" })
-@Unique(["candidate_id", "election_name"])
+@Unique(["candidate_id", "party_id", "election_name"])
 export class Manifesto {
   @PrimaryGeneratedColumn()
   manifesto_id!: number
@@ -20,8 +20,11 @@ export class Manifesto {
   @Column({ length: 150 })
   election_name!: string
 
-  @Column({ type: "int" })
-  candidate_id!: number
+  @Column({ type: "int", nullable: true })
+  candidate_id!: number | null
+
+  @Column({ type: "int", nullable: true })
+  party_id!: number | null
 
   @ManyToOne(() => Candidate, (candidate) => candidate.manifestos, {
     onDelete: "CASCADE",

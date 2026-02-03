@@ -31,9 +31,12 @@ export const generateAchievementPrompt = ({
   // Replace placeholders
   const filledHtml = htmlTemplate.replace(/{{TODAY}}/g, today)
 
-  return `
-役割: あなたは中立な編集者です。以下の入力情報に基づき、必ず web_search を用いて一次・公的ソースを優先して調査し、候補者の「選挙の確定日から現時点まで」の実績・活動を、推測・創作なしで整理してください。${startDate}年に出馬の「${candidate}」の実績・活動を、読みやすくメリハリのあるHTML形式で作成してください。
+  const isCandidateMissing = candidate === "情報未提供"
+  const targetExpression = isCandidateMissing ? `所属政党「${party}」` : `出馬の「${candidate}」`
 
+  return `
+役割: あなたは中立な編集者です。以下の入力情報に基づき、必ず web_search を用いて一次・公的ソースを優先して調査し、${isCandidateMissing ? "政党" : "候補者"}の「選挙の確定日から現時点まで」の実績・活動を、推測・創作なしで整理してください。${startDate}年の${targetExpression}の実績・活動を、読みやすくメリハリのあるHTML形式で作成してください。
+${isCandidateMissing ? "\n※候補者が特定されていないため、政党全体の公的な活動や実績、国会等での動きを中心にまとめてください。\n" : ""}
 # 入力（この範囲から外れないこと）
 - 候補者: ${candidate}
 - 選挙: ${election}
@@ -46,13 +49,13 @@ export const generateAchievementPrompt = ({
 1) 収集対象期間は「選挙の確定日（含む）」から「現在日（含む）」まで。
 2) web_search を用いて、以下の順でソースを探索・採用（重視順）:
    a. 国会・選挙管理委員会・自治体等の公的機関
-   b. 候補者の公式サイト・政務活動報告・公式SNS
+   b. ${isCandidateMissing ? "政党" : "候補者"}の公式サイト・政務活動報告・公式SNS
    c. 信頼度の高い報道（NHK、全国紙、地方紙、通信社、放送局、業界紙）
    ※再転載・まとめサイト・個人ブログは採用しない
 3) クエリ例（日本語中心、必要に応じ組み合わせ）:
-   - 「${candidate} 実績」「${candidate} 活動報告」「${candidate} 国会質疑」
-   - 「${candidate} 法案 提出」「${candidate} 記者会見」
-   - 「${candidate} 地元 活動」「${candidate} 公式サイト お知らせ」
+${isCandidateMissing ? `   - 「${party} 実績」「${party} 活動報告」「${party} 政策実現」
+   - 「${party} ${election} 公約 進捗」` : `   - 「${candidate} 実績」「${candidate} 活動報告」「${candidate} 国会質疑」
+   - 「${candidate} 法案 提出」「${candidate} 記者会見」`}
 4) 採用件数は3〜12件に限定。重複・再掲は最新情報のみ残す。
 5) 抽出は「実際に行われた事実（日時・主体・行為）」のみに限定。意見表明は<q>で短く引用し、URLと日付（<time>）を必ず付す。
 

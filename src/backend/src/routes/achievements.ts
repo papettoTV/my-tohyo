@@ -30,10 +30,10 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
     const candidate = candidate_name?.trim()
     const election = election_name?.trim()
 
-    if (!candidate || !election) {
+    if (!election || (!candidate && !party_name)) {
       return res
         .status(400)
-        .json({ message: "candidate_name と election_name は必須です" })
+        .json({ message: "election_name と candidate_name または party_name は必須です" })
     }
 
     const apiKey =
@@ -59,7 +59,7 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
     const today = new Date().toISOString().slice(0, 10)
 
     const userPrompt = generateAchievementPrompt({
-      candidate,
+      candidate: candidate as string,
       election: sanitize(election, "選挙"),
       electionType: sanitize(election_type_name, "選挙種類"),
       party: sanitize(party_name, "無所属"),
@@ -145,64 +145,90 @@ router.post("/", authenticateJWT, async (req, res) => {
       candidate_name,
       election_name,
       content,
+      party_name,
     } = req.body as {
       candidate_name?: string
       election_name?: string
       content?: string
+      party_name?: string | null
     }
 
-    const candidate = candidate_name?.trim()
-    const election = election_name?.trim() // New requirement
+    const candidate = candidate_name?.trim() || null
+    const election = election_name?.trim()
     const body = content?.trim()
+    const partyIdFromReq = (req.body as any).party_id || null
 
-    if (!candidate || !election || !body) {
-      return res.status(400).json({ message: "candidate_name, election_name, content は必須です" })
+    if (!election || !body || (!candidate && !partyIdFromReq && !party_name)) {
+      return res.status(400).json({ message: "必須項目が不足しています" })
     }
 
     const ds = await getDataSource()
 
-    // 候補者を特定 (または新規作成が必要？ マニフェスト同様に、候補者がいない場合は作成するロジックを入れるべきか、
-    // あるいは候補者マスタは別途管理されている前提か。
-    // 現状の voteRecord.ts の POST では候補者がなければインサートしている。
-    // ここでも安全のため、候補者が存在しない場合はエラーにするか、作成するか。
-    // マニフェスト同様のロジックに合わせるのが自然。ひとまず検索のみ。
-    
-    const candidateRows = await ds.query(
-      `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-      [candidate]
-    )
+    let candidateId: number | null = null
+    let canonicalCandidateName: string = candidate || party_name || "不明"
 
-    let candidateId: number
-    let canonicalCandidateName: string
-
-    if (candidateRows && candidateRows.length > 0) {
-      candidateId = candidateRows[0].candidate_id
-      canonicalCandidateName = candidateRows[0].name
-    } else {
-       // 候補者マスタ生成 (Manifesto側と合わせる)
-       const insertedCandidateRows = await ds.query(
-        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
-         RETURNING candidate_id, name`,
+    if (candidate) {
+      const candidateRows = await ds.query(
+        `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
         [candidate]
       )
-      candidateId = insertedCandidateRows[0].candidate_id
-      canonicalCandidateName = insertedCandidateRows[0].name
+
+      if (candidateRows && candidateRows.length > 0) {
+        candidateId = candidateRows[0].candidate_id
+        canonicalCandidateName = candidateRows[0].name
+      } else {
+        // 候補者マスタ生成 (Manifesto側と合わせる)
+        const insertedCandidateRows = await ds.query(
+          `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
+           RETURNING candidate_id, name`,
+          [candidate]
+        )
+        candidateId = insertedCandidateRows[0].candidate_id
+        canonicalCandidateName = insertedCandidateRows[0].name
+      }
+    }
+
+    let partyId: number | null = partyIdFromReq
+    if (!partyId && party_name) {
+      const partyRows = await ds.query(
+        `SELECT party_id FROM PARTY WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+        [party_name]
+      )
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({ message: "政党が見つかりません" })
+      }
+      partyId = partyRows[0].party_id
     }
 
     // 実績を ACHIEVEMENT テーブルに保存 (Upsert)
     // 以前の CANDIDATE への保存はやめる
-    await ds.query(
-      `
-        INSERT INTO ACHIEVEMENT (candidate_id, candidate_name, election_name, content, content_format)
-        VALUES ($1, $2, $3, $4, 'html')
-        ON CONFLICT (candidate_id, election_name)
-        DO UPDATE SET
-          candidate_name = EXCLUDED.candidate_name,
-          content = EXCLUDED.content,
-          content_format = EXCLUDED.content_format
-      `,
-      [candidateId, canonicalCandidateName, election, body]
-    )
+    if (candidateId) {
+      await ds.query(
+        `
+          INSERT INTO ACHIEVEMENT (candidate_id, party_id, candidate_name, election_name, content, content_format)
+          VALUES ($1, $2, $3, $4, $5, 'html')
+          ON CONFLICT (candidate_id, election_name)
+          DO UPDATE SET
+            candidate_name = EXCLUDED.candidate_name,
+            content = EXCLUDED.content,
+            content_format = EXCLUDED.content_format
+        `,
+        [candidateId, partyId, canonicalCandidateName, election, body]
+      )
+    } else {
+      await ds.query(
+        `
+          INSERT INTO ACHIEVEMENT (candidate_id, party_id, candidate_name, election_name, content, content_format)
+          VALUES (NULL, $1, $2, $3, $4, 'html')
+          ON CONFLICT (party_id, election_name)
+          DO UPDATE SET
+            candidate_name = EXCLUDED.candidate_name,
+            content = EXCLUDED.content,
+            content_format = EXCLUDED.content_format
+        `,
+        [partyId, canonicalCandidateName, election, body]
+      )
+    }
 
     return res.status(200).json({
       candidate_id: candidateId,

@@ -26,11 +26,18 @@ export function scheduleAchievementAutoUpdate(payload: AutoUpdatePayload) {
 async function autoUpdateAchievement(payload: AutoUpdatePayload) {
   const { candidateId, candidateName, electionName, voteDate, partyName, electionTypeName } = payload
   const ds = await getDataSource()
+  const partyId = await fetchCandidatePartyId(ds, candidateId)
 
   // 1. Check if achievement already exists for this candidate/election
   const existingRows = await ds.query(
-    `SELECT achievement_id, content FROM ACHIEVEMENT WHERE candidate_id = $1 AND election_name = $2`,
-    [candidateId, electionName]
+    `
+      SELECT achievement_id, content
+        FROM ACHIEVEMENT
+       WHERE candidate_id = $1
+         AND party_id IS NOT DISTINCT FROM $2
+         AND election_name = $3
+    `,
+    [candidateId, partyId, electionName]
   )
 
   if (existingRows && existingRows.length > 0) {
@@ -112,19 +119,20 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
       `
         INSERT INTO ACHIEVEMENT (
           candidate_id,
+          party_id,
           candidate_name,
           election_name,
           content,
           content_format
         )
-        VALUES ($1, $2, $3, $4, 'html')
-        ON CONFLICT (candidate_id, election_name)
+        VALUES ($1, $2, $3, $4, $5, 'html')
+        ON CONFLICT (candidate_id, party_id, election_name)
         DO UPDATE SET
           candidate_name = EXCLUDED.candidate_name,
           content = EXCLUDED.content,
           content_format = EXCLUDED.content_format
       `,
-      [candidateId, candidateName, electionName, content]
+      [candidateId, partyId, candidateName, electionName, content]
     )
     console.log(`${LOG_PREFIX} Achievement saved successfully.`)
   } catch (dbError) {
@@ -177,4 +185,15 @@ function sanitizeDate(value?: string | null): string {
     return "情報未提供"
   }
   return date.toISOString().slice(0, 10)
+}
+
+async function fetchCandidatePartyId(
+  ds: Awaited<ReturnType<typeof getDataSource>>,
+  candidateId: number
+): Promise<number | null> {
+  const rows = await ds.query(
+    `SELECT party_id FROM CANDIDATE WHERE candidate_id = $1`,
+    [candidateId]
+  )
+  return rows?.[0]?.party_id ?? null
 }

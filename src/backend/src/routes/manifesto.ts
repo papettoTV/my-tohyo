@@ -37,10 +37,10 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
     const candidate = candidate_name?.trim()
     const election = election_name?.trim()
 
-    if (!candidate || !election) {
+    if (!election || (!candidate && !party_name)) {
       return res
         .status(400)
-        .json({ message: "candidate_name と election_name は必須です" })
+        .json({ message: "election_name と candidate_name または party_name は必須です" })
     }
 
     const apiKey =
@@ -81,7 +81,7 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
     const today = new Date().toISOString().slice(0, 10)
 
     const userPrompt = generateManifestoPrompt({
-      candidate,
+      candidate: candidate as string,
       election: sanitize(election, "第27回参議院議員通常選挙") as string,
       derivedYear,
       derivedDistrict,
@@ -172,21 +172,27 @@ router.post("/", authenticateJWT, async (req, res) => {
       content,
       content_format,
       status: requestedStatus,
+      party_name, // Defined party_name here
     } = req.body as {
       candidate_name?: string
       election_name?: string
       content?: string
       content_format?: string
       status?: string | null
+      party_name?: string | null
     }
 
-    const candidate = candidate_name?.trim()
+    const candidate = candidate_name?.trim() || null
     const election = election_name?.trim()
     const body = content?.trim()
     const format = (content_format || "html").trim().toLowerCase()
+    const partyIdFromReq = (req.body as any).party_id || null
+    const partyNameFromReq = party_name?.trim() || null
 
-    if (!candidate || !election || !body) {
-      return res.status(400).json({ message: "必須項目が不足しています" })
+    if (!election || !body || (!candidate && !partyIdFromReq && !partyNameFromReq)) {
+      return res
+        .status(400)
+        .json({ message: "候補者名または政党情報、選挙名、本文は必須です" })
     }
 
     if (format !== "markdown" && format !== "html") {
@@ -210,38 +216,66 @@ router.post("/", authenticateJWT, async (req, res) => {
 
     const ds = await getDataSource()
 
-    const existingCandidateRows = await ds.query(
-      `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-      [candidate]
-    )
+    let candidateId: number | null = null
+    let canonicalCandidateName: string = candidate || partyNameFromReq || "不明"
 
-    let candidateId: number
-    let canonicalCandidateName: string
-
-    if (existingCandidateRows && existingCandidateRows.length > 0) {
-      candidateId = existingCandidateRows[0].candidate_id
-      canonicalCandidateName = existingCandidateRows[0].name
-    } else {
-      const insertedCandidateRows = await ds.query(
-        `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
-         RETURNING candidate_id, name`,
+    if (candidate) {
+      const existingCandidateRows = await ds.query(
+        `SELECT candidate_id, name FROM CANDIDATE WHERE LOWER(name) = LOWER($1) LIMIT 1`,
         [candidate]
       )
 
-      candidateId = insertedCandidateRows[0].candidate_id
-      canonicalCandidateName = insertedCandidateRows[0].name
+      if (existingCandidateRows && existingCandidateRows.length > 0) {
+        candidateId = existingCandidateRows[0].candidate_id
+        canonicalCandidateName = existingCandidateRows[0].name
+      } else {
+        const insertedCandidateRows = await ds.query(
+          `INSERT INTO CANDIDATE (name, party_id, manifesto_url, achievements) VALUES ($1, NULL, NULL, NULL)
+           RETURNING candidate_id, name`,
+          [candidate]
+        )
+
+        candidateId = insertedCandidateRows[0].candidate_id
+        canonicalCandidateName = insertedCandidateRows[0].name
+      }
     }
 
-    const rows = await ds.query(
-      `
-        INSERT INTO MANIFESTO (candidate_id, candidate_name, election_name, content, content_format, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (candidate_id, election_name)
-        DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format, status = EXCLUDED.status
-        RETURNING manifesto_id, status
-      `,
-      [candidateId, canonicalCandidateName, election, body, format, status]
-    )
+    let partyId: number | null = partyIdFromReq
+    if (!partyId && partyNameFromReq) {
+      const partyRows = await ds.query(
+        `SELECT party_id FROM PARTY WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+        [partyNameFromReq]
+      )
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({ message: "政党が見つかりません" })
+      }
+      partyId = partyRows[0].party_id
+    }
+
+    let rows
+    if (candidateId) {
+      rows = await ds.query(
+        `
+          INSERT INTO MANIFESTO (candidate_id, party_id, candidate_name, election_name, content, content_format, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          ON CONFLICT (candidate_id, election_name)
+          DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format, status = EXCLUDED.status
+          RETURNING manifesto_id, status
+        `,
+        [candidateId, partyId, canonicalCandidateName, election, body, format, status]
+      )
+    } else {
+      rows = await ds.query(
+        `
+          INSERT INTO MANIFESTO (candidate_id, party_id, candidate_name, election_name, content, content_format, status)
+          VALUES (NULL, $1, $2, $3, $4, $5, $6)
+          ON CONFLICT (party_id, election_name)
+          DO UPDATE SET candidate_name = EXCLUDED.candidate_name, content = EXCLUDED.content, content_format = EXCLUDED.content_format, status = EXCLUDED.status
+          RETURNING manifesto_id, status
+        `,
+        [partyId, canonicalCandidateName, election, body, format, status]
+      )
+    }
 
     const manifestoId = rows?.[0]?.manifesto_id
     const savedStatus = rows?.[0]?.status ?? status ?? null

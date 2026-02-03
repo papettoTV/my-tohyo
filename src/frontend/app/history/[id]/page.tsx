@@ -435,8 +435,8 @@ export default function HistoryDetailPage() {
     const candidate = vote.candidate_name?.trim() || ""
     const election = vote.election_name?.trim() || ""
 
-    if (!candidate || !election) {
-      setAutoError("候補者名または選挙名が不足しているため自動生成できません。")
+    if (!election || (!candidate && !vote.party_name)) {
+      setAutoError("選挙名、および候補者名または政党名が不足しているため自動生成できません。")
       return
     }
 
@@ -461,6 +461,7 @@ export default function HistoryDetailPage() {
         },
         body: JSON.stringify({
           candidate_name: candidate,
+          party_name: vote.party_name,
           election_name: election,
           election_type_name: vote.election_type_name,
           achievement_content: achievementContent || null,
@@ -522,8 +523,8 @@ export default function HistoryDetailPage() {
     const candidate = vote.candidate_name?.trim() || ""
     const election = vote.election_name?.trim() || ""
 
-    if (!candidate || !election) {
-      setAutoError("候補者名または選挙名が不足しているため自動生成できません。")
+    if (!election || (!candidate && !vote.party_name)) {
+      setAutoError("選挙名、および候補者名または政党名が不足しているため自動生成できません。")
       return
     }
 
@@ -588,7 +589,9 @@ export default function HistoryDetailPage() {
     }
 
     const candidate = vote.candidate_name?.trim() || ""
-    if (!candidate) return
+    const party_id = vote.party_id || null
+    const party_name = vote.party_name || null
+    if (!candidate && !party_id) return
 
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
     if (!token) return
@@ -606,6 +609,8 @@ export default function HistoryDetailPage() {
             },
             body: JSON.stringify({
                 candidate_name: candidate,
+                party_id: party_id,
+                party_name: party_name,
                 election_name: vote.election_name || "",
                 content: generatedAchievement,
             }),
@@ -652,8 +657,8 @@ export default function HistoryDetailPage() {
     const candidate = vote.candidate_name?.trim() || ""
     const election = vote.election_name?.trim() || ""
 
-    if (!candidate || !election) {
-      setAutoError("候補者名または選挙名が不足しているため登録できません。")
+    if (!election || (!candidate && !vote.party_id && !vote.party_name)) {
+      setAutoError("選挙名、および候補者名または政党情報が不足しているため登録できません。")
       setPreviewOpen(false)
       return
     }
@@ -682,6 +687,8 @@ export default function HistoryDetailPage() {
         },
         body: JSON.stringify({
           candidate_name: candidate,
+          party_id: vote.party_id || null,
+          party_name: vote.party_name || null,
           election_name: election,
           content: contentToSave,
           content_format: "html",
@@ -898,9 +905,9 @@ export default function HistoryDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
-                  実績・活動
+                  {vote.candidate_name ? "実績・活動" : "政党の実績・活動"}
                 </CardTitle>
-                <CardDescription>活動実績</CardDescription>
+                <CardDescription>{vote.candidate_name ? "活動実績" : "所属政党の活動実績"}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {achievementHtml ? (
@@ -937,9 +944,9 @@ export default function HistoryDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
-                  マニフェスト
+                  {vote.candidate_name ? "マニフェスト" : "政党マニフェスト"}
                 </CardTitle>
-                <CardDescription>候補者の選挙時の公約・政策</CardDescription>
+                <CardDescription>{vote.candidate_name ? "候補者の選挙時の公約・政策" : "所属政党の公約・政策"}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {manifestoHtml ? (
