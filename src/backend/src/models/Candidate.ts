@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm"
 import { Party } from "./Party"
-import { Manifesto } from "./Manifesto"
+import { CandidateContent } from "./CandidateContent"
 // 候補者
 @Entity({ name: "candidate" })
 export class Candidate {
@@ -30,9 +30,9 @@ export class Candidate {
   @Column({ type: "text", nullable: true })
   achievements?: string | null
 
-  // @OneToOne(() => Achievement, (achievement) => achievement.candidate)
-  // achievement?: Achievement
+  // @OneToMany(() => CandidateContent, (content) => content.candidate)
+  // contents?: CandidateContent[]
 
-  @OneToMany(() => Manifesto, (manifesto) => manifesto.candidate)
-  manifestos?: Manifesto[]
+  @OneToMany(() => CandidateContent, (content) => content.candidate)
+  manifestos?: CandidateContent[]
 }

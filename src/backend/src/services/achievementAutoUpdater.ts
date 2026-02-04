@@ -31,11 +31,12 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
   // 1. Check if achievement already exists for this candidate/election
   const existingRows = await ds.query(
     `
-      SELECT achievement_id, content
-        FROM ACHIEVEMENT
+      SELECT content_id, content
+        FROM CANDIDATE_CONTENT
        WHERE candidate_id = $1
          AND party_id IS NOT DISTINCT FROM $2
          AND election_name = $3
+         AND type = 'achievement'
     `,
     [candidateId, partyId, electionName]
   )
@@ -117,7 +118,8 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
   try {
     await ds.query(
       `
-        INSERT INTO ACHIEVEMENT (
+        INSERT INTO CANDIDATE_CONTENT (
+          type,
           candidate_id,
           party_id,
           candidate_name,
@@ -125,8 +127,8 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
           content,
           content_format
         )
-        VALUES ($1, $2, $3, $4, $5, 'html')
-        ON CONFLICT (candidate_id, party_id, election_name)
+        VALUES ('achievement', $1, $2, $3, $4, $5, 'html')
+        ON CONFLICT (candidate_id, party_id, election_name, type)
         DO UPDATE SET
           candidate_name = EXCLUDED.candidate_name,
           content = EXCLUDED.content,
