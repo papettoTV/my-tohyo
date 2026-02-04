@@ -103,4 +103,48 @@ router.get(
   }
 )
 
+/**
+ * 自動テスト用ログインバパス
+ * ALLOW_TEST_AUTH=true の場合のみ有効
+ */
+router.get("/test-login", async (req, res) => {
+  if (process.env.ALLOW_TEST_AUTH !== "true") {
+    return res.status(403).json({ message: "Test auth is not allowed" })
+  }
+
+  try {
+    const ds = await getDataSource()
+    const userRepo = ds.getRepository(User)
+    const testEmail = "test-user@example.com"
+    const testName = "Test User"
+
+    let user = await userRepo.findOne({ where: { email: testEmail } })
+    if (!user) {
+      user = new User()
+      user.name = testName
+      user.email = testEmail
+      user.region = "test-region"
+      await userRepo.save(user)
+    }
+
+    const payload = {
+      id: user.user_id,
+      email: user.email,
+      name: user.name,
+      provider: "test",
+    }
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" })
+    const returnTo = (req.query.returnTo as string) || "/mypage"
+
+    res.redirect(
+      `http://localhost:3000/login/callback?token=${token}&returnTo=${encodeURIComponent(
+        returnTo
+      )}`
+    )
+  } catch (e) {
+    console.error("Test login failed:", e)
+    return res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 export default router

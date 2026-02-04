@@ -8,80 +8,78 @@ import { getDataSource } from "../data-source"
 import { User } from "../models/User"
 import { SocialAccount } from "../models/SocialAccount"
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "",
-    },
-    async (
-      accessToken: string,
-      refreshToken: string,
-      profile: Profile,
-      done: VerifyCallback
-    ) => {
-      // GoogleアカウントID（sub）でSocialAccountを検索
-      try {
-        const ds = await getDataSource()
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ""
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || ""
 
-        const socialAccountRepo = ds.getRepository(SocialAccount)
-        const userRepo = ds.getRepository(User)
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: GOOGLE_CALLBACK_URL,
+      },
+      async (
+        accessToken: string,
+        refreshToken: string,
+        profile: Profile,
+        done: VerifyCallback
+      ) => {
+        // ... (existing logic)
+        try {
+          const ds = await getDataSource()
 
-        // provider名
-        const provider = "google"
-        // Googleのsub
-        const account_identifier = profile.id
+          const socialAccountRepo = ds.getRepository(SocialAccount)
+          const userRepo = ds.getRepository(User)
 
-        // SocialAccount検索
-        let socialAccount = await socialAccountRepo.findOne({
-          where: { provider, account_identifier },
-          relations: ["user"],
-        })
+          const provider = "google"
+          const account_identifier = profile.id
 
-        if (socialAccount && socialAccount.user) {
-          // 既存Userがあれば認証済みとして返す
-          return done(null, socialAccount.user)
+          let socialAccount = await socialAccountRepo.findOne({
+            where: { provider, account_identifier },
+            relations: ["user"],
+          })
+
+          if (socialAccount && socialAccount.user) {
+            return done(null, socialAccount.user)
+          }
+
+          const email =
+            profile.emails && profile.emails.length > 0
+              ? profile.emails[0].value
+              : null
+          if (!email) {
+            return done(new Error("Googleアカウントにemailがありません"))
+          }
+
+          let user = await userRepo.findOne({ where: { email } })
+
+          if (!user) {
+            user = new User()
+            user.name = profile.displayName
+            user.email = email
+            user.region = "unknown"
+            await userRepo.save(user)
+          }
+
+          const newSocialAccount = new SocialAccount()
+          newSocialAccount.user = user
+          newSocialAccount.user_id = user.user_id
+          newSocialAccount.provider = provider
+          newSocialAccount.account_identifier = account_identifier
+          await socialAccountRepo.save(newSocialAccount)
+
+          return done(null, user)
+        } catch (err) {
+          return done(err)
         }
-
-        // SocialAccountがなければ、emailでUserを検索
-        // Googleプロフィールからemail取得
-        const email =
-          profile.emails && profile.emails.length > 0
-            ? profile.emails[0].value
-            : null
-        if (!email) {
-          return done(new Error("Googleアカウントにemailがありません"))
-        }
-
-        // emailでUser検索
-        let user = await userRepo.findOne({ where: { email } })
-
-        if (!user) {
-          // User新規作成
-          user = new User()
-          user.name = profile.displayName
-          user.email = email
-          user.region = "unknown" // regionはGoogleから取得不可のため仮値
-          await userRepo.save(user)
-        }
-
-        // Userは存在するがSocialAccountがなかった場合のみSocialAccount新規作成
-        // （既にSocialAccountがあればこの分岐に来ない）
-        const newSocialAccount = new SocialAccount()
-        newSocialAccount.user = user
-        newSocialAccount.user_id = user.user_id
-        newSocialAccount.provider = provider
-        newSocialAccount.account_identifier = account_identifier
-        await socialAccountRepo.save(newSocialAccount)
-
-        return done(null, user)
-      } catch (err) {
-        return done(err)
       }
-    }
+    )
   )
-)
+} else {
+  console.warn("GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing. Google OAuth will not be available.")
+}
 
 // セッション管理（JWT運用なら不要だが、必要に応じて）
 passport.serializeUser(

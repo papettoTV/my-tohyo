@@ -1,7 +1,7 @@
 import OpenAI from "openai"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { getDataSource } from "../data-source"
-import { ManifestoStatus } from "../models/Manifesto"
+import { ManifestoStatus } from "../models/CandidateContent"
 import { generateManifestoPrompt } from "../prompts/manifestoTemplate"
 
 type AutoUpdatePayload = {
@@ -113,7 +113,7 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
   try {
     await ds.query(
       `
-        UPDATE MANIFESTO
+        UPDATE CANDIDATE_CONTENT
            SET content = $1,
                content_format = 'html',
                status = $2,
@@ -121,6 +121,7 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
          WHERE candidate_id = $4
            AND party_id IS NOT DISTINCT FROM $5
            AND election_name = $6
+           AND type = 'manifesto'
       `,
       [content, "COMPLETE", candidateName, candidateId, partyId, electionName]
     )
@@ -190,7 +191,8 @@ async function ensureManifestoRow(
 
   await ds.query(
     `
-      INSERT INTO MANIFESTO (
+      INSERT INTO CANDIDATE_CONTENT (
+        type,
         candidate_id,
         party_id,
         candidate_name,
@@ -199,8 +201,8 @@ async function ensureManifestoRow(
         content_format,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, 'html', $6)
-      ON CONFLICT (candidate_id, party_id, election_name)
+      VALUES ('manifesto', $1, $2, $3, $4, $5, 'html', $6)
+      ON CONFLICT (candidate_id, party_id, election_name, type)
       DO UPDATE SET
         candidate_name = EXCLUDED.candidate_name,
         status = EXCLUDED.status
@@ -218,11 +220,12 @@ async function updateStatus(
 ) {
   await ds.query(
     `
-      UPDATE MANIFESTO
+      UPDATE CANDIDATE_CONTENT
          SET status = $3
        WHERE candidate_id = $1
          AND party_id IS NOT DISTINCT FROM $2
          AND election_name = $4
+         AND type = 'manifesto'
     `,
     [candidateId, partyId, status, electionName]
   )
