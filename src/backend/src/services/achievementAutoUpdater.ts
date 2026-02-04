@@ -153,7 +153,7 @@ async function generateWithOpenAI(prompt: string): Promise<string | undefined> {
   // Reuse the same client config as manifestoAutoUpdater if possible, or new one
   const client = new OpenAI({ apiKey, maxRetries: 1 }) 
   const response = await client.responses.create({
-    model: "gpt-5",
+    model: process.env.OPENAI_MODEL || "gpt-5",
     reasoning: { effort: "medium" },
     tools: [{ type: "web_search_preview" }],
     input: prompt,
@@ -170,8 +170,9 @@ async function generateWithGemini(prompt: string): Promise<string | undefined> {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp"
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp",
+    model: modelName,
     tools: [{ googleSearchRetrieval: {} }],
   })
 

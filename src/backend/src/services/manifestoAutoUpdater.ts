@@ -143,7 +143,7 @@ async function generateWithOpenAI(
 
   const client = new OpenAI({ apiKey, maxRetries: 2 }) // Lower retries since we have fallback
   const response = await client.responses.create({
-    model: "gpt-5",
+    model: process.env.OPENAI_MODEL || "gpt-5",
     reasoning: { effort: "medium" },
     tools: [{ type: "web_search_preview" }],
     input: prompt,
@@ -163,8 +163,9 @@ async function generateWithGemini(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp"
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp",
+    model: modelName,
     tools: [{ googleSearchRetrieval: {} }],
   })
 
