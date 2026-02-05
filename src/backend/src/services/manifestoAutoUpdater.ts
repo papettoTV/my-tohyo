@@ -80,21 +80,24 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
   if (process.env.CALL_PROMPT_FLG !== "true") {
     console.log(`${LOG_PREFIX} CALL_PROMPT_FLG is not true. Using dummy data.`);
     content = `
-      <section>
-        <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
-        <p>これはダミーのマニフェストデータです。機能フラグが有効な場合にのみLLMによる生成が行われます。</p>
-      </section>
-    `;
+<section>
+  <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
+  <p>これはダミーのマニフェストデータです。機能フラグが有効な場合にのみLLMによる生成が行われます。</p>
+</section>
+`.trim();
   } else {
     try {
       // 1. Try OpenAI
+      console.log(`${LOG_PREFIX} Attempting generation with OpenAI (${process.env.OPENAI_MODEL || "gpt-5"})...`)
       content = await generateWithOpenAI(userPrompt)
+      if (content) console.log(`${LOG_PREFIX} OpenAI generation successful (${content.length} chars)`)
     } catch (error: any) {
       // 2. If 429, try Gemini
       if (error?.status === 429) {
         console.warn(`${LOG_PREFIX} OpenAI 429, falling back to Gemini...`)
         try {
           content = await generateWithGemini(userPrompt)
+          if (content) console.log(`${LOG_PREFIX} Gemini fallback successful (${content.length} chars)`)
         } catch (geminiError) {
           console.error(`${LOG_PREFIX} Gemini fallback failed:`, geminiError)
         }
@@ -206,7 +209,8 @@ async function ensureManifestoRow(
       ON CONFLICT (candidate_id, party_id, election_name, type)
       DO UPDATE SET
         candidate_name = EXCLUDED.candidate_name,
-        status = EXCLUDED.status
+        status = EXCLUDED.status,
+        content = EXCLUDED.content
     `,
     [candidateId, partyId, candidateName, electionName, PLACEHOLDER_CONTENT, status]
   )

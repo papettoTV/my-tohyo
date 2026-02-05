@@ -7,9 +7,10 @@ import { Party } from "./models/Party"
 import * as dotenv from "dotenv"
 import { resolve } from "path"
 
-// .env.local があれば優先して読み込む
+// .env.local があれば優先して読み込む。その後 .env を読み込む（既存は上書きされない）
 const envLocalPath = resolve(__dirname, "../.env.local")
 dotenv.config({ path: envLocalPath })
+dotenv.config()
 
 type GlobalWithDS = {
   __appDataSource?: DataSource

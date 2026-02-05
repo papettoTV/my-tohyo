@@ -12,14 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -42,8 +34,6 @@ import {
   Camera,
   Clock,
   ExternalLink,
-  Sparkles,
-  Loader2,
   Trash2, 
 } from "lucide-react"
 import Link from "next/link"
@@ -217,22 +207,6 @@ export default function HistoryDetailPage() {
     return markdownToHtml(body)
   }, [achievementContent, achievementFormat])
 
-  const [autoGenerating, setAutoGenerating] = useState(false)
-  const [savingGenerated, setSavingGenerated] = useState(false)
-  const [generatedManifesto, setGeneratedManifesto] = useState<string | null>(
-    null
-  )
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [autoError, setAutoError] = useState<string | null>(null)
-
-  // Achievement Auto-Gen State
-  const [autoGeneratingAchievement, setAutoGeneratingAchievement] = useState(false)
-  const [savingGeneratedAchievement, setSavingGeneratedAchievement] = useState(false)
-  const [generatedAchievement, setGeneratedAchievement] = useState<string | null>(null)
-  const [previewMode, setPreviewMode] = useState<"manifesto" | "achievement">("manifesto")
-
-
-
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -283,29 +257,6 @@ export default function HistoryDetailPage() {
     }
   }, [vote, isDeleting, router, toast])
 
-  const generatedManifestoHtml = useMemo(() => {
-    const body = generatedManifesto?.trim()
-    if (!body) return null
-
-    const seemsHtml = /^\s*</.test(body) && /<\/?[a-z][^>]*>/i.test(body)
-    if (seemsHtml) {
-      return body
-    }
-
-    return markdownToHtml(body)
-  }, [generatedManifesto])
-
-  const generatedAchievementHtml = useMemo(() => {
-    const body = generatedAchievement?.trim()
-    if (!body) return null
-
-    const seemsHtml = /^\s*</.test(body) && /<\/?[a-z][^>]*>/i.test(body)
-    if (seemsHtml) {
-      return body
-    }
-
-    return markdownToHtml(body)
-  }, [generatedAchievement])
 
   useEffect(() => {
     let mounted = true
@@ -429,319 +380,6 @@ export default function HistoryDetailPage() {
     }
   }, [vote?.social_post_url])
 
-  const handleAutoGenerateClick = useCallback(async () => {
-    if (!vote || autoGenerating || savingGenerated) return
-
-    const candidate = vote.candidate_name?.trim() || ""
-    const election = vote.election_name?.trim() || ""
-
-    if (!election || (!candidate && !vote.party_name)) {
-      setAutoError("選挙名、および候補者名または政党名が不足しているため自動生成できません。")
-      return
-    }
-
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-    if (!token) {
-      setAutoError("認証情報が見つからないため自動生成を実行できません。")
-      return
-    }
-
-    setAutoError(null)
-    setAutoGenerating(true)
-
-    try {
-      const base = resolveApiBase()
-      const response = await fetch(`${base}/api/manifestos/auto-generate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          candidate_name: candidate,
-          party_name: vote.party_name,
-          election_name: election,
-          election_type_name: vote.election_type_name,
-          achievement_content: achievementContent || null,
-          notes: vote.notes || null,
-          existing_manifesto: manifestoContent || null,
-        }),
-      })
-
-      if (!response.ok) {
-        const text = await response.text()
-        let message = "マニフェストの自動生成に失敗しました"
-        try {
-          const payload = JSON.parse(text)
-          if (payload?.message) message = payload.message
-        } catch (error) {
-          // ignore JSON parse error
-        }
-        throw new Error(message)
-      }
-
-      const data = (await response.json()) as { content?: string }
-      const content = data?.content?.trim()
-      if (!content) {
-        throw new Error("生成された内容が空でした。")
-      }
-
-      setGeneratedManifesto(content)
-      setPreviewMode("manifesto")
-      setPreviewOpen(true)
-    } catch (err) {
-      console.error("Failed to auto-generate manifesto:", err)
-      setGeneratedManifesto(null)
-      setPreviewOpen(false)
-      setAutoError(
-        err instanceof Error
-          ? err.message
-          : "マニフェストの自動生成に失敗しました"
-      )
-    } finally {
-      setAutoGenerating(false)
-    }
-  }, [
-    achievementContent,
-    autoGenerating,
-    manifestoContent,
-    savingGenerated,
-    vote,
-  ])
-
-  const handleCancelPreview = useCallback(() => {
-    setPreviewOpen(false)
-    setGeneratedManifesto(null)
-    setGeneratedAchievement(null)
-  }, [])
-
-  const handleAutoGenerateAchievementClick = useCallback(async () => {
-    if (!vote || autoGeneratingAchievement || savingGeneratedAchievement) return
-
-    const candidate = vote.candidate_name?.trim() || ""
-    const election = vote.election_name?.trim() || ""
-
-    if (!election || (!candidate && !vote.party_name)) {
-      setAutoError("選挙名、および候補者名または政党名が不足しているため自動生成できません。")
-      return
-    }
-
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-    if (!token) {
-      setAutoError("認証情報が見つからないため自動生成を実行できません。")
-      return
-    }
-
-    setAutoError(null)
-    setAutoGeneratingAchievement(true)
-
-    try {
-      const base = resolveApiBase()
-      const response = await fetch(`${base}/api/achievements/auto-generate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          candidate_name: candidate,
-          election_name: election,
-          election_type_name: vote.election_type_name,
-          party_name: vote.party_name,
-          vote_date: vote.vote_date,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("実績の自動生成に失敗しました")
-      }
-
-      const data = (await response.json()) as { content?: string }
-      const content = data?.content?.trim()
-      if (!content) {
-        throw new Error("生成された内容が空でした。")
-      }
-
-      setGeneratedAchievement(content)
-      setPreviewMode("achievement")
-      setPreviewOpen(true)
-    } catch (err) {
-      console.error("Failed to auto-generate achievement:", err)
-      setGeneratedAchievement(null)
-      setPreviewOpen(false)
-      setAutoError(
-        err instanceof Error
-          ? err.message
-          : "実績の自動生成に失敗しました"
-      )
-    } finally {
-      setAutoGeneratingAchievement(false)
-    }
-  }, [vote, autoGeneratingAchievement, savingGeneratedAchievement])
-
-  const handleRegisterAchievement = useCallback(async () => {
-    if (!vote || !generatedAchievement || savingGeneratedAchievement) {
-        setPreviewOpen(false)
-        return
-    }
-
-    const candidate = vote.candidate_name?.trim() || ""
-    const party_id = vote.party_id || null
-    const party_name = vote.party_name || null
-    if (!candidate && !party_id) return
-
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (!token) return
-
-    setSavingGeneratedAchievement(true)
-    setPreviewOpen(false)
-
-    try {
-        const base = resolveApiBase()
-        const response = await fetch(`${base}/api/achievements`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                candidate_name: candidate,
-                party_id: party_id,
-                party_name: party_name,
-                election_name: vote.election_name || "",
-                content: generatedAchievement,
-            }),
-        })
-
-        if (!response.ok) {
-            throw new Error("実績の登録に失敗しました")
-        }
-
-        const data = await response.json()
-        const newContent = data.achievements
-
-        // Update local vote state
-        setVote(prev => {
-            if (!prev) return prev
-            return {
-                ...prev,
-                achievement: {
-                    content_id: 0,
-                    content: newContent,
-                    content_format: "html",
-                    candidate_name: candidate,
-                    election_name: prev.election_name || "",
-                }
-            }
-        })
-
-        setGeneratedAchievement(null)
-        setAutoError(null)
-    } catch (err) {
-        console.error("Failed to register achievement:", err)
-        setAutoError(err instanceof Error ? err.message : "実績の登録に失敗しました")
-    } finally {
-        setSavingGeneratedAchievement(false)
-    }
-  }, [vote, generatedAchievement, savingGeneratedAchievement])
-
-  const handleRegisterGenerated = useCallback(async () => {
-    if (!vote || !generatedManifesto || savingGenerated) {
-      setPreviewOpen(false)
-      return
-    }
-
-    const candidate = vote.candidate_name?.trim() || ""
-    const election = vote.election_name?.trim() || ""
-
-    if (!election || (!candidate && !vote.party_id && !vote.party_name)) {
-      setAutoError("選挙名、および候補者名または政党情報が不足しているため登録できません。")
-      setPreviewOpen(false)
-      return
-    }
-
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-    if (!token) {
-      setAutoError("認証情報が見つからないため登録できません。")
-      setPreviewOpen(false)
-      return
-    }
-
-    const contentToSave = generatedManifesto
-
-    setSavingGenerated(true)
-    setPreviewOpen(false)
-
-    try {
-      const base = resolveApiBase()
-      const response = await fetch(`${base}/api/manifestos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          candidate_name: candidate,
-          party_id: vote.party_id || null,
-          party_name: vote.party_name || null,
-          election_name: election,
-          content: contentToSave,
-          content_format: "html",
-        }),
-      })
-
-      if (!response.ok) {
-        const text = await response.text()
-        let message = "マニフェストの登録に失敗しました"
-        try {
-          const payload = JSON.parse(text)
-          if (payload?.message) message = payload.message
-        } catch (error) {
-          // ignore parse error
-        }
-        throw new Error(message)
-      }
-
-      const data = (await response.json()) as {
-        content_id?: number
-        candidate_id?: number
-        candidate_name?: string
-        content?: string
-        content_format?: string
-        status?: ManifestoStatus | null
-      }
-
-      const updatedManifesto = {
-        content_id: data?.content_id ?? vote.manifesto?.content_id ?? 0,
-        election_name: vote.election_name || election,
-        candidate_name:
-          data?.candidate_name || vote.candidate_name || candidate,
-        content: data?.content ?? contentToSave,
-        content_format: (data?.content_format as "markdown" | "html") ?? "html",
-        candidate_id: data?.candidate_id ?? vote.candidate_id ?? null,
-        status: data?.status ?? vote.manifesto?.status ?? null,
-      }
-
-      setVote((prev) =>
-        prev ? { ...prev, manifesto: updatedManifesto } : prev
-      )
-      setGeneratedManifesto(null)
-      setAutoError(null)
-    } catch (err) {
-      console.error("Failed to register generated manifesto:", err)
-      setGeneratedManifesto(null)
-      setAutoError(
-        err instanceof Error ? err.message : "マニフェストの登録に失敗しました"
-      )
-    } finally {
-      setSavingGenerated(false)
-    }
-  }, [generatedManifesto, savingGenerated, vote])
 
   // loading state
   if (vote === undefined) {
@@ -921,22 +559,6 @@ export default function HistoryDetailPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex flex-col items-stretch gap-2 pt-0 sm:flex-row sm:items-center sm:justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAutoGenerateAchievementClick}
-                  disabled={autoGeneratingAchievement || savingGeneratedAchievement}
-                  className="justify-center sm:min-w-[140px]"
-                >
-                  {autoGeneratingAchievement || savingGeneratedAchievement ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                  )}
-                  自動更新
-                </Button>
-              </CardFooter>
             </Card>
 
             {/* Manifesto */}
@@ -960,27 +582,6 @@ export default function HistoryDetailPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex flex-col items-stretch gap-2 pt-0 sm:flex-row sm:items-center sm:justify-end">
-                {autoError && (
-                  <p className="text-sm text-red-600 sm:mr-2 sm:max-w-sm">
-                    {autoError}
-                  </p>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAutoGenerateClick}
-                  disabled={autoGenerating || savingGenerated}
-                  className="justify-center sm:min-w-[140px]"
-                >
-                  {autoGenerating || savingGenerated ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                  )}
-                  自動更新
-                </Button>
-              </CardFooter>
             </Card>
           </div>
         </div>
@@ -1060,80 +661,6 @@ export default function HistoryDetailPage() {
           </AlertDialog>
         </div>
 
-        <Dialog
-          open={previewOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              handleCancelPreview()
-            }
-          }}
-        >
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {previewMode === "achievement"
-                  ? "自動生成された実績・活動"
-                  : "自動生成されたマニフェスト"}
-              </DialogTitle>
-              <DialogDescription>
-                内容を確認し、登録するかキャンセルしてください。
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="max-h-[60vh] overflow-y-auto space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700">
-              {previewMode === "achievement" ? (
-                generatedAchievementHtml ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: generatedAchievementHtml }}
-                  />
-                ) : (
-                  <p className="text-gray-500">
-                    生成された内容が見つかりませんでした。
-                  </p>
-                )
-              ) : generatedManifestoHtml ? (
-                <div
-                  dangerouslySetInnerHTML={{ __html: generatedManifestoHtml }}
-                />
-              ) : (
-                <p className="text-gray-500">
-                  生成された内容が見つかりませんでした。
-                </p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCancelPreview}
-                disabled={savingGenerated || savingGeneratedAchievement}
-              >
-                キャンセル
-              </Button>
-              <Button
-                type="button"
-                onClick={
-                  previewMode === "achievement"
-                    ? handleRegisterAchievement
-                    : handleRegisterGenerated
-                }
-                disabled={
-                  savingGenerated ||
-                  savingGeneratedAchievement ||
-                  (previewMode === "achievement"
-                    ? !generatedAchievement
-                    : !generatedManifesto)
-                }
-              >
-                {savingGenerated || savingGeneratedAchievement ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                この内容を登録
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

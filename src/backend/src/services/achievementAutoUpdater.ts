@@ -59,12 +59,12 @@ async function autoUpdateAchievement(payload: AutoUpdatePayload) {
   if (process.env.CALL_PROMPT_FLG !== "true") {
     console.log(`${LOG_PREFIX} CALL_PROMPT_FLG is not true. Using dummy data.`);
     content = `
-      <ul>
-        <li>タイトル：${candidateName} / 実績・活動 (ダミー)</li>
-        <li>要約：<ul><li>これはダミーの実績データです。</li></ul></li>
-        <li>出典：<ol><li><a href="#">ダミー出典</a></li></ol></li>
-      </ul>
-    `;
+<ul>
+  <li>タイトル：${candidateName} / 実績・活動 (ダミー)</li>
+  <li>要約：<ul><li>これはダミーの実績データです。</li></ul></li>
+  <li>出典：<ol><li><a href="#">ダミー出典</a></li></ol></li>
+</ul>
+`.trim();
   } else {
     try {
       // Prepare Prompt

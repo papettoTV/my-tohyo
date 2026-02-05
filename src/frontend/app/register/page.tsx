@@ -330,15 +330,15 @@ export default function RegisterPage() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button type="submit" className="flex-1" disabled={loading}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {loading ? "登録中..." : "登録する"}
-                  </Button>
                   <Link href="/mypage" className="flex-1">
                     <Button variant="outline" className="w-full bg-transparent">
                       キャンセル
                     </Button>
                   </Link>
+                  <Button type="submit" className="flex-1" disabled={loading}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {loading ? "登録中..." : "登録する"}
+                  </Button>
                 </div>
               </form>
             </CardContent>
