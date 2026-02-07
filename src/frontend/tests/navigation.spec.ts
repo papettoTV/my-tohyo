@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { loginAndNavigateToMyPage } from "./utils/auth"
 
 test("利用規約ページに遷移できること", async ({ page }) => {
   await page.goto("/")
@@ -22,4 +23,8 @@ test("マイページ（ログイン前）に遷移しようとするとログ�
   // ログイン画面にリダイレクトされることを確認
   await expect(page).toHaveURL(/\/login/)
   await expect(page.getByText("ログイン", { exact: true }).first()).toBeVisible()
+})
+
+test("ログイン後にマイページに遷移できること", async ({ page }) => {
+  await loginAndNavigateToMyPage(page)
 })
