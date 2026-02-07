@@ -591,7 +591,7 @@ export default function HistoryDetailPage() {
                     className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    実績・活動を検索する
+                    Google検索で調べる
                   </a>
                 </div>
               </CardContent>

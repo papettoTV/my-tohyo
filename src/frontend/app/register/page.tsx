@@ -293,7 +293,7 @@ export default function RegisterPage() {
 
                 {/* Candidate Name (free text) */}
                 <div className="space-y-2">
-                  <Label htmlFor="candidate">候補者名（任意）</Label>
+                  <Label htmlFor="candidate">候補者名（小選挙区の場合）</Label>
                   <Input
                     id="candidate"
                     placeholder="例: 山田花子"
@@ -304,10 +304,10 @@ export default function RegisterPage() {
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label htmlFor="notes">メモ（任意）</Label>
+                  <Label htmlFor="notes">投票メモ（任意）</Label>
                   <Textarea
                     id="notes"
-                    placeholder="投票理由や感想など..."
+                    placeholder="どういう理由で投票したのか、など、投票時の思いを残せます"
                     rows={3}
                     value={notes}
                     onChange={(ev) => setNotes(ev.target.value)}
@@ -319,12 +319,12 @@ export default function RegisterPage() {
                   <Label htmlFor="social-url">SNS投稿URL（任意）</Label>
                   <Input
                     id="social-url"
-                    placeholder="例: https://twitter.com/username/status/1234567890"
+                    placeholder="例: https://x.com/username/status/1234567890"
                     value={socialUrl}
                     onChange={(ev) => setSocialUrl(ev.target.value)}
                   />
                   <div className="text-sm text-gray-500">
-                    SNSに投稿した投稿のURLを貼り付けてください（任意）
+                    投票した証を、SNSに投稿した投票したポストで残しましょう（任意）
                   </div>
                 </div>
 
