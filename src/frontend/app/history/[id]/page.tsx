@@ -58,6 +58,7 @@ type AchievementDetail = {
   candidate_name: string
   content: string
   content_format: "markdown" | "html"
+  updated_at?: string | null
 }
 
 type VoteDetail = {
@@ -206,6 +207,15 @@ export default function HistoryDetailPage() {
     }
     return markdownToHtml(body)
   }, [achievementContent, achievementFormat])
+  const achievementUpdatedAt = achievement?.updated_at
+
+  const isWithinOneMonth = useMemo(() => {
+    if (!vote?.vote_date) return false
+    const voteDate = new Date(vote.vote_date)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    return voteDate > thirtyDaysAgo
+  }, [vote?.vote_date])
 
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
@@ -548,16 +558,42 @@ export default function HistoryDetailPage() {
                 <CardDescription>{vote.candidate_name ? "活動実績" : "所属政党の活動実績"}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {achievementHtml ? (
-                  <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
-                    dangerouslySetInnerHTML={{ __html: achievementHtml }}
-                  />
+                {isWithinOneMonth ? (
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+                    投票日から1ヶ月後に実績・活動が確認できます。
+                  </div>
+                ) : achievementHtml ? (
+                  <>
+                    <div
+                      className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                      dangerouslySetInnerHTML={{ __html: achievementHtml }}
+                    />
+                    {achievementUpdatedAt && (
+                      <div className="text-xs text-gray-400 mt-4 text-right">
+                        最終更新: {format(new Date(achievementUpdatedAt), "yyyy/MM/dd HH:mm")}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
                     登録された実績・活動情報がまだありません。
                   </div>
                 )}
+                <div className="pt-2">
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent(
+                      `${partyName}の${candidateName}の${
+                        vote.vote_date ? format(new Date(vote.vote_date), "yyyy年M月d日") : ""
+                      }から現在まで実績・活動`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    実績・活動を検索する
+                  </a>
+                </div>
               </CardContent>
             </Card>
 

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique, UpdateDateColumn } from "typeorm"
 import { Candidate } from "./Candidate"
 import { Party } from "./Party"
 
@@ -43,4 +43,7 @@ export class CandidateContent {
 
   @Column({ type: "varchar", length: 20, nullable: true })
   status!: ManifestoStatus | null
+
+  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  updated_at!: Date
 }

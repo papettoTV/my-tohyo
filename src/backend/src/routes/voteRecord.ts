@@ -272,7 +272,8 @@ router.get("/:id", authenticateJWT, async (req, res) => {
              m.status AS manifesto_status,
              a.content_id AS achievement_content_id,
              a.content AS achievement_content,
-             a.content_format AS achievement_content_format
+             a.content_format AS achievement_content_format,
+             a.updated_at AS achievement_updated_at
       FROM VOTE_RECORD vr
       LEFT JOIN ELECTION_TYPE et ON vr.election_type_id = et.election_type_id
       LEFT JOIN CANDIDATE c ON LOWER(c.name) = LOWER(vr.candidate_name)
@@ -305,6 +306,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
       achievement_content_id: achievementContentId,
       achievement_content: achievementContent,
       achievement_content_format: achievementContentFormat,
+      achievement_updated_at: achievementUpdatedAt,
       ...rest
     } = record
 
@@ -329,6 +331,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
             candidate_name: rest.candidate_name,
             content: achievementContent,
             content_format: achievementContentFormat || "html",
+            updated_at: achievementUpdatedAt,
            }
          : null
 

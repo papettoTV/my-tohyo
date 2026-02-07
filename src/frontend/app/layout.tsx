@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'MyTohyo',
+  description: 'あなたの投票記録を安全に保存し、政治参加の履歴を管理できるプラットフォーム',
   generator: 'v0.dev',
 }
 
