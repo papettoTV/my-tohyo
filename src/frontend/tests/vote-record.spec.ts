@@ -8,6 +8,8 @@ test.describe("投票記録のライフサイクル", () => {
   })
 
   test("投票記録を登録し、詳細を確認後に削除できること", async ({ page }) => {
+    const uniqueElectionName = `テスト自動選挙 ${Date.now()}`
+
     // 1. 登録ページへ遷移
     const registerLink = page.getByRole("link", { name: "投票記録登録" })
     // await registerLink.waitFor({ state: "visible", timeout: 20000 })
@@ -20,7 +22,7 @@ test.describe("投票記録のライフサイクル", () => {
     // 2. フォームの入力
     await page.getByLabel("選挙の種類").click()
     await page.getByRole("option").first().click()
-    await page.getByLabel("選挙名").fill("テスト自動選挙 2026")
+    await page.getByLabel("選挙名").fill(uniqueElectionName)
     await page.getByLabel("政党名").click()
     await page.getByRole("option").first().click()
     await page.getByLabel("候補者名（小選挙区の場合）").fill("テスト 太郎")
@@ -35,7 +37,7 @@ test.describe("投票記録のライフサイクル", () => {
     await page.waitForURL(/\/history\/\d+/)
     const detailUrl = page.url()
     await expect(page.getByText("投票履歴詳細")).toBeVisible()
-    await expect(page.getByText("テスト自動選挙 2026").first()).toBeVisible()
+    await expect(page.getByText(uniqueElectionName).first()).toBeVisible()
 
     // 4.5 履歴一覧での表示確認
     await page.goto("/history")
@@ -47,14 +49,14 @@ test.describe("投票記録のライフサイクル", () => {
     })
     // await page.waitForURL("/history")
 
-    await expect(page.getByText("テスト自動選挙 2026").first()).toBeVisible()
+    await expect(page.getByText(uniqueElectionName).first()).toBeVisible()
 
     // 4.6 マイページでの表示確認
     await page.goto("/mypage")
     // await page.waitForResponse((response) => {
     //   return response.url().includes("/api/vote-records") && response.status() === 200
     // })
-    await expect(page.getByText("テスト自動選挙 2026").first()).toBeVisible()
+    await expect(page.getByText(uniqueElectionName).first()).toBeVisible()
 
     // 5. 削除の実行 (詳細ページに戻る)
     await page.goto(detailUrl)
@@ -71,6 +73,6 @@ test.describe("投票記録のライフサイクル", () => {
     await page.reload()
 
     // 削除したレコードが一覧にないことを確認
-    await expect(page.getByText("テスト自動選挙 2026")).not.toBeVisible()
+    await expect(page.getByText(uniqueElectionName)).not.toBeVisible()
   })
 })
