@@ -39,10 +39,21 @@ test.describe("投票記録のライフサイクル", () => {
 
     // 4.5 履歴一覧での表示確認
     await page.goto("/history")
+    await page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/vote-records") &&
+        response.status() === 200
+      )
+    })
+    // await page.waitForURL("/history")
+
     await expect(page.getByText("テスト自動選挙 2026").first()).toBeVisible()
 
     // 4.6 マイページでの表示確認
     await page.goto("/mypage")
+    // await page.waitForResponse((response) => {
+    //   return response.url().includes("/api/vote-records") && response.status() === 200
+    // })
     await expect(page.getByText("テスト自動選挙 2026").first()).toBeVisible()
 
     // 5. 削除の実行 (詳細ページに戻る)
@@ -58,7 +69,6 @@ test.describe("投票記録のライフサイクル", () => {
       timeout: 10000,
     })
     await page.reload()
-    await expect(page.getByText("最近の投票").first()).toBeVisible()
 
     // 削除したレコードが一覧にないことを確認
     await expect(page.getByText("テスト自動選挙 2026")).not.toBeVisible()

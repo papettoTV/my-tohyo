@@ -21,7 +21,7 @@ export async function loginAndNavigateToMyPage(page: Page) {
   const testLoginButton = page.getByRole("button", {
     name: "テストログイン (認証バイパス)",
   })
-  page.waitForURL(/\/(login\/callback|mypage)/)
+  page.waitForURL("/mypage")
   testLoginButton.click()
 
   // 4. mypageに遷移するまで待機
