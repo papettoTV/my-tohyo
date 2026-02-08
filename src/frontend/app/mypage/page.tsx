@@ -1,4 +1,4 @@
-import { cookies } from "next/headers"
+ "use client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { History, LogOut, Plus, Calendar, Vote, Building } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
 
 type VoteRecord = {
   vote_id: number
@@ -43,48 +44,44 @@ function formatDisplayDate(value?: string | null): string {
   }
 }
 
-const API_BASE = ""
-
-export default async function MyPage() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get("token")?.value
+export default function MyPage() {
   const API_BASE = ""
+  const [userName, setUserName] = useState("ユーザー")
+  const [userId, setUserId] = useState<number | null>(null)
+  const [voteRecords, setVoteRecords] = useState<VoteRecord[]>([])
+  const [loadingVotes, setLoadingVotes] = useState(true)
 
-  let userName = "ユーザー"
-  let userId: number | null = null
+  useEffect(() => {
+    let mounted = true
 
-  try {
-    if (token) {
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      })
-      if (res.ok) {
+    async function loadUser() {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          cache: "no-store",
+          credentials: "include",
+        })
+        if (!res.ok) return
         const user = await res.json()
-        userName = user?.name || user?.email || "ユーザー"
-        userId = typeof user?.user_id === "number" ? user.user_id : null
+        if (!mounted) return
+        setUserName(user?.name || user?.email || "ユーザー")
+        setUserId(typeof user?.user_id === "number" ? user.user_id : null)
+      } catch {
+        // 失敗時はデフォルトのまま表示
       }
     }
-  } catch {
-    // 失敗時はデフォルトのまま表示
-  }
 
-  let voteRecords: VoteRecord[] = []
-  if (token) {
-    try {
-      const res = await fetch(`${API_BASE}/api/vote-records`, {
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (res.ok) {
+    async function loadVotes() {
+      setLoadingVotes(true)
+      try {
+        const res = await fetch(`${API_BASE}/api/vote-records`, {
+          cache: "no-store",
+          credentials: "include",
+        })
+        if (!res.ok) return
         const data = await res.json()
+        if (!mounted) return
         if (Array.isArray(data)) {
-          voteRecords = data.filter((item): item is VoteRecord => {
+          const filtered = data.filter((item): item is VoteRecord => {
             return (
               typeof item?.vote_id === "number" &&
               typeof item?.vote_date === "string" &&
@@ -93,24 +90,36 @@ export default async function MyPage() {
               typeof item?.election_type_id === "number"
             )
           })
+          setVoteRecords(filtered)
         }
+      } catch {
+        // 取得失敗時は空配列のまま
+      } finally {
+        if (mounted) setLoadingVotes(false)
       }
-    } catch {
-      // 取得失敗時は空配列のまま
     }
-  }
 
-  const filteredRecords = userId
-    ? voteRecords.filter((record) => record.user_id === userId)
-    : voteRecords
+    loadUser()
+    loadVotes()
 
-  const sortedRecords = [...filteredRecords].sort((a, b) => {
+    return () => {
+      mounted = false
+    }
+  }, [API_BASE])
+
+  const filteredRecords = useMemo(() => {
+    return userId
+      ? voteRecords.filter((record) => record.user_id === userId)
+      : voteRecords
+  }, [userId, voteRecords])
+
+  const sortedRecords = useMemo(() => [...filteredRecords].sort((a, b) => {
     const aTime = new Date(a.vote_date).getTime()
     const bTime = new Date(b.vote_date).getTime()
     return Number.isNaN(bTime) ? -1 : Number.isNaN(aTime) ? 1 : bTime - aTime
-  })
+  }), [filteredRecords])
 
-  const recentVotes = sortedRecords.slice(0, 3)
+  const recentVotes = useMemo(() => sortedRecords.slice(0, 3), [sortedRecords])
   const voteCount = filteredRecords.length
 
   const avatarText = userName ? userName.slice(0, 2) : "？"
@@ -163,13 +172,13 @@ export default async function MyPage() {
           </Card>
         </div>
 
-        {/* 過去の投票履歴 */}
+        {/* 最近の投票 */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <History className="h-5 w-5 text-purple-600" />
-                <CardTitle>過去の投票履歴</CardTitle>
+                <CardTitle>最近の投票</CardTitle>
               </div>
               <Link href="/history">
                 <Button variant="ghost" size="sm">
@@ -177,10 +186,12 @@ export default async function MyPage() {
                 </Button>
               </Link>
             </div>
-            <CardDescription>最新の投票記録</CardDescription>
+            <CardDescription>最新の投票記録3件</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentVotes.length === 0 ? (
+            {loadingVotes ? (
+              <div className="text-sm text-gray-600">読み込み中...</div>
+            ) : recentVotes.length === 0 ? (
               <div className="text-sm text-gray-600">
                 まだ投票記録がありません。
               </div>

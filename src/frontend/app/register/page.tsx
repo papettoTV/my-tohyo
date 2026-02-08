@@ -50,15 +50,10 @@ export default function RegisterPage() {
   const [notes, setNotes] = useState<string>("")
   const [socialUrl, setSocialUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
-
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setToken(localStorage.getItem("token"))
-    }
     async function loadParties() {
       try {
         const res = await fetch(`${API_BASE}/api/parties`)
@@ -122,12 +117,6 @@ export default function RegisterPage() {
     }
 
     try {
-      if (!token) {
-        toast({ title: "エラー", description: "認証情報が見つかりません" })
-        setLoading(false)
-        return
-      }
-
       const partyIdValue = selectedParty ? Number(selectedParty) : null
       const partyNameValue = selectedParty
         ? parties.find((p) => String(p.party_id) === selectedParty)?.name?.trim() || ""
@@ -137,8 +126,8 @@ export default function RegisterPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           vote_date,
           election_type_id: election_type_id,
@@ -156,6 +145,12 @@ export default function RegisterPage() {
         const data = await res.json()
         const voteId = data.vote_id
         router.push(`/history/${voteId}`)
+        return
+      }
+
+      if (res.status === 401) {
+        toast({ title: "エラー", description: "認証情報が見つかりません" })
+        setLoading(false)
         return
       }
 

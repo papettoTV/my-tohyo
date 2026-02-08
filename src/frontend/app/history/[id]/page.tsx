@@ -218,25 +218,11 @@ export default function HistoryDetailPage() {
     if (!vote || isDeleting) return
     
     setIsDeleting(true)
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-    if (!token) {
-      toast({
-        title: "エラー",
-        description: "認証情報が見つかりません",
-        variant: "destructive",
-      })
-      setIsDeleting(false)
-      return
-    }
-
     try {
       const base = ""
       const res = await fetch(`${base}/api/vote-records/${vote.vote_id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       })
 
       if (res.ok) {
@@ -245,6 +231,16 @@ export default function HistoryDetailPage() {
           description: "投票履歴を削除しました",
         })
         router.push("/history")
+        return
+      }
+
+      if (res.status === 401) {
+        toast({
+          title: "エラー",
+          description: "認証情報が見つかりません",
+          variant: "destructive",
+        })
+        setIsDeleting(false)
         return
       }
 
@@ -286,28 +282,17 @@ export default function HistoryDetailPage() {
 
     const url = `${base}/api/vote-records/${resolvedId}`
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (!token) {
-      if (mounted) {
-        setError("認証情報が見つかりません")
-        setVote(null)
-      }
-      return () => {
-        mounted = false
-      }
-    }
-
     fetch(url, {
       cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 404) {
           if (mounted) setVote(null)
           return null
+        }
+        if (res.status === 401) {
+          throw new Error("Unauthorized")
         }
         if (!res.ok) {
           throw new Error(`API error: ${res.status}`)
@@ -340,25 +325,13 @@ export default function HistoryDetailPage() {
     let alive = true
     setImageLoading(true)
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (!token) {
-      setResolvedImageUrl(null)
-      setImageLoading(false)
-      return () => {
-        alive = false
-      }
-    }
-
     const apiUrl = `${base}/api/social-image?url=${encodeURIComponent(
       vote.social_post_url
     )}`
 
     fetch(apiUrl, {
       cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     })
       .then((res) => {
         if (!res.ok) throw new Error(`API error: ${res.status}`)

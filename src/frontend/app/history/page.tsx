@@ -90,18 +90,9 @@ function SocialImage({
     const base = ""
     setLoading(true)
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-    const headers: HeadersInit = token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {}
-
     fetch(`${base}/api/social-image?url=${encodeURIComponent(socialUrl)}`, {
       cache: "no-store",
-      headers,
+      credentials: "include",
     })
       .then((res) => {
         if (!res.ok) {
@@ -164,25 +155,14 @@ export default function HistoryPage() {
     const base = ""
     setRecords(undefined)
     setError(null)
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (!token) {
-      if (mounted) {
-        setError("認証情報が見つかりません")
-        setRecords(null)
-      }
-      return () => {
-        mounted = false
-      }
-    }
-
     fetch(`${base}/api/vote-records`, {
       cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     })
       .then((res) => {
+        if (res.status === 401) {
+          throw new Error("Unauthorized")
+        }
         if (!res.ok) {
           throw new Error(`API error: ${res.status}`)
         }

@@ -14,5 +14,14 @@ export function verifyAuth(req: NextRequest) {
       return null
     }
   }
+  const cookieToken = req.cookies.get("token")?.value
+  if (cookieToken) {
+    try {
+      const decoded = jwt.verify(cookieToken, JWT_SECRET)
+      return decoded
+    } catch (err) {
+      return null
+    }
+  }
   return null
 }

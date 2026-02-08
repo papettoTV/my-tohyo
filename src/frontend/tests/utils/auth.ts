@@ -30,5 +30,5 @@ export async function loginAndNavigateToMyPage(page: Page) {
   // 5. mypageの要素を確認
   await expect(page).toHaveURL(/\/mypage/)
   await expect(page.getByText("さん")).toBeVisible()
-  await expect(page.getByText("過去の投票履歴")).toBeVisible()
+  await expect(page.getByText("最近の投票")).toBeVisible()
 }

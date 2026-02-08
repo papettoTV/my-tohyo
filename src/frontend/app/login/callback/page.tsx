@@ -1,9 +1,8 @@
 "use client"
 import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
 const LoginCallback = () => {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -14,11 +13,12 @@ const LoginCallback = () => {
       // localStorage と cookie に保存（middleware 用）
       localStorage.setItem("token", token)
       document.cookie = `token=${token}; Path=/; Max-Age=604800; SameSite=Lax`
-      router.replace(returnTo)
+      // サーバー側で cookie を確実に認識させるため、フルリロードで遷移
+      window.location.href = returnTo
     } else {
-      router.replace("/login")
+      window.location.href = "/login"
     }
-  }, [router, searchParams])
+  }, [searchParams])
 
   return <div>ログイン処理中...</div>
 }
