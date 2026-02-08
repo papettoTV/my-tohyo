@@ -41,7 +41,7 @@ export default function LoginPage() {
               className="w-full"
               size="lg"
               onClick={() => {
-                window.location.href = `http://localhost:3001/api/users/google?returnTo=${encodeURIComponent(
+                window.location.href = `/api/users/google?returnTo=${encodeURIComponent(
                   returnTo
                 )}`
               }}
@@ -74,7 +74,7 @@ export default function LoginPage() {
                 className="w-full border-dashed border-2"
                 size="lg"
                 onClick={() => {
-                  window.location.href = `http://localhost:3001/api/users/test-login?returnTo=${encodeURIComponent(
+                  window.location.href = `/api/users/test-login?returnTo=${encodeURIComponent(
                     returnTo
                   )}`
                 }}

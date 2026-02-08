@@ -166,14 +166,7 @@ function markdownToHtml(markdown: string): string {
   return chunks.join("\n")
 }
 
-function resolveApiBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.API_BASE_URL ||
-    "http://localhost:3001"
-  )
-}
+const API_BASE = ""
 
 export default function HistoryDetailPage() {
   const params = useParams()
@@ -238,7 +231,7 @@ export default function HistoryDetailPage() {
     }
 
     try {
-      const base = resolveApiBase()
+      const base = ""
       const res = await fetch(`${base}/api/vote-records/${vote.vote_id}`, {
         method: "DELETE",
         headers: {
@@ -270,7 +263,7 @@ export default function HistoryDetailPage() {
 
   useEffect(() => {
     let mounted = true
-    const base = resolveApiBase()
+    const base = ""
 
     setVote(undefined)
     setError(null)
@@ -343,7 +336,7 @@ export default function HistoryDetailPage() {
     setResolvedImageUrl(null)
     if (!vote?.social_post_url) return
 
-    const base = resolveApiBase()
+    const base = ""
     let alive = true
     setImageLoading(true)
 

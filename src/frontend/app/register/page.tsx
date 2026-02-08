@@ -33,11 +33,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function RegisterPage() {
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.API_BASE_URL ||
-    "http://localhost:3001"
+  const API_BASE = ""
   const [date, setDate] = useState<Date>(new Date())
   const [parties, setParties] = useState<{ party_id: number; name: string }[]>(
     []

@@ -43,19 +43,12 @@ function formatDisplayDate(value?: string | null): string {
   }
 }
 
-function selectApiBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.API_BASE_URL ||
-    "http://localhost:3001"
-  )
-}
+const API_BASE = ""
 
 export default async function MyPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get("token")?.value
-  const API_BASE = selectApiBase()
+  const API_BASE = ""
 
   let userName = "ユーザー"
   let userId: number | null = null
