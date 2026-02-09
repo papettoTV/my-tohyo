@@ -24,6 +24,10 @@ export const AppDataSource =
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
+    ssl:
+      process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === "true" }
+        : false,
     synchronize: false, // Always false for frontend/production
     logging: process.env.NODE_ENV === "development",
     entities: [
