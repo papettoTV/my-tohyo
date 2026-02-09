@@ -12,11 +12,7 @@ test.describe("投票記録のライフサイクル", () => {
 
     // 1. 登録ページへ遷移
     const registerLink = page.getByRole("link", { name: "投票記録登録" })
-    // await registerLink.waitFor({ state: "visible", timeout: 20000 })
-    // await Promise.all([
-    // page.waitForURL(/\/register/, { timeout: 20000 })
     registerLink.click()
-    // ])
     await expect(page).toHaveURL(/\/register/)
 
     // 2. フォームの入力
@@ -47,15 +43,11 @@ test.describe("投票記録のライフサイクル", () => {
         response.status() === 200
       )
     })
-    // await page.waitForURL("/history")
 
     await expect(page.getByText(uniqueElectionName).first()).toBeVisible()
 
     // 4.6 マイページでの表示確認
     await page.goto("/mypage")
-    // await page.waitForResponse((response) => {
-    //   return response.url().includes("/api/vote-records") && response.status() === 200
-    // })
     await expect(page.getByText(uniqueElectionName).first()).toBeVisible()
 
     // 5. 削除の実行 (詳細ページに戻る)
