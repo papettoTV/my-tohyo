@@ -7,9 +7,9 @@ import {
   Unique,
   type Relation,
 } from "typeorm"
-import type { User } from "./User"
+import { User } from "./User"
 
-@Entity()
+@Entity({ name: "social_account" })
 @Unique(["provider", "account_identifier"])
 export class SocialAccount {
   @PrimaryGeneratedColumn()
@@ -18,7 +18,7 @@ export class SocialAccount {
   @Column()
   user_id!: number
 
-  @ManyToOne("User", "socialAccounts")
+  @ManyToOne(() => User, (user) => user.socialAccounts)
   @JoinColumn({ name: "user_id" })
   user!: Relation<User>
 

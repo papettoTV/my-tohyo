@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, type Relation } from "typeorm"
-import type { SocialAccount } from "./SocialAccount"
+import { SocialAccount } from "./SocialAccount"
 
-@Entity()
+@Entity({ name: "user" })
 export class User {
   @PrimaryGeneratedColumn()
   user_id!: number
@@ -15,6 +15,6 @@ export class User {
   @Column()
   region!: string
 
-  @OneToMany("SocialAccount", "user")
+  @OneToMany(() => SocialAccount, (socialAccount) => socialAccount.user)
   socialAccounts!: Relation<SocialAccount[]>
 }
