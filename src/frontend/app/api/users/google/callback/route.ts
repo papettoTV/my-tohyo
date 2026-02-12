@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { OAuth2Client } from "google-auth-library"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
+import { User } from "@/lib/db/models/User"
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     }
 
     const ds = await getDataSource()
-    const userRepo = ds.getRepository("User")
+    const userRepo = ds.getRepository(User)
     
     let user = await userRepo.findOne({ where: { email: userInfo.email } })
     if (!user) {

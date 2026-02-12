@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDataSource } from "@/lib/db/data-source"
 import { verifyAuth } from "@/lib/auth"
+import { User } from "@/lib/db/models/User"
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     const ds = await getDataSource()
-    const userRepo = ds.getRepository("User")
+    const userRepo = ds.getRepository(User)
     const user = await userRepo.findOne({ where: { email } })
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
