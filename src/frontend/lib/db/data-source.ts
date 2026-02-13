@@ -1,12 +1,13 @@
-import "reflect-metadata"
 import { DataSource } from "typeorm"
-import { User } from "./models/User"
-import { SocialAccount } from "./models/SocialAccount"
-import { ElectionType } from "./models/ElectionType"
-import { Party } from "./models/Party"
-import { Candidate } from "./models/Candidate"
-import { CandidateContent } from "./models/CandidateContent"
-import { VoteRecord } from "./models/VoteRecord"
+import {
+  User,
+  SocialAccount,
+  ElectionType,
+  Party,
+  Candidate,
+  CandidateContent,
+  VoteRecord,
+} from "@/lib/db/entities"
 
 type GlobalWithDS = {
   __appDataSource?: DataSource
@@ -37,6 +38,7 @@ export const AppDataSource =
       Party,
       Candidate,
       CandidateContent,
+      VoteRecord,
     ],
     // ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   })

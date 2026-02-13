@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { OAuth2Client } from "google-auth-library"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
-import { User } from "@/lib/db/models/User"
+import { User } from "@/lib/db/entities"
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -57,8 +57,19 @@ export async function GET(req: NextRequest) {
     }
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" })
 
-    // Redirect to the frontend callback
-    return NextResponse.redirect(new URL(`/login/callback?token=${token}&returnTo=${encodeURIComponent(state)}`, req.url))
+    // Set httpOnly cookie and redirect to target page
+    const redirectUrl = new URL(state, req.url)
+    const res = NextResponse.redirect(redirectUrl)
+    res.cookies.set({
+      name: "token",
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    return res
   } catch (error) {
     console.error("Google callback failed:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })

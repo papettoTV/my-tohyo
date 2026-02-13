@@ -1,8 +1,7 @@
-import "reflect-metadata"
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
-import { User } from "@/lib/db/models/User"
+import { User } from "@/lib/db/entities"
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
 
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const ds = await getDataSource()
-    const userRepo = ds.getRepository<User>("User")
+    const userRepo = ds.getRepository(User)
     const testEmail = "test-user@example.com"
     const testName = "Test User"
 
@@ -38,8 +37,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const returnTo = searchParams.get("returnTo") || "/mypage"
 
-    // Redirect to the frontend callback
-    return NextResponse.redirect(new URL(`/login/callback?token=${token}&returnTo=${encodeURIComponent(returnTo)}`, req.url))
+    const redirectUrl = new URL(returnTo, req.url)
+    const res = NextResponse.redirect(redirectUrl)
+    res.cookies.set({
+      name: "token",
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    return res
   } catch (error) {
     console.error("Test login failed:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })

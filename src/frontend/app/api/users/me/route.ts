@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDataSource } from "@/lib/db/data-source"
 import { verifyAuth } from "@/lib/auth"
-import { User } from "@/lib/db/models/User"
+import { User } from "@/lib/db/entities"
 
 export async function GET(req: NextRequest) {
   try {

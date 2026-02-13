@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getDataSource } from "@/lib/db/data-source"
-import { ElectionType } from "@/lib/db/models/ElectionType"
+import { ElectionType } from "@/lib/db/entities"
 
 export async function GET() {
   try {
