@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
-import { User } from "@/lib/db/entities"
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
 
@@ -12,18 +11,21 @@ export async function GET(req: NextRequest) {
 
   try {
     const ds = await getDataSource()
-    const userRepo = ds.getRepository(User)
     const testEmail = "test-user@example.com"
     const testName = "Test User"
 
-    let user = await userRepo.findOne({ where: { email: testEmail } })
-    if (!user) {
-      user = new User()
-      user.name = testName
-      user.email = testEmail
-      user.region = "test-region"
-      await userRepo.save(user)
+    let userRows = await ds.query(
+      `SELECT user_id, name, email FROM "user" WHERE email = $1 LIMIT 1`,
+      [testEmail]
+    )
+    if (!userRows || userRows.length === 0) {
+      userRows = await ds.query(
+        `INSERT INTO "user" (name, email, region) VALUES ($1, $2, $3)
+         RETURNING user_id, name, email`,
+        [testName, testEmail, "test-region"]
+      )
     }
+    const user = userRows[0]
 
     const payload = {
       id: user.user_id,

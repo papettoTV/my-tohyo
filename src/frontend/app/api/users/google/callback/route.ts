@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { OAuth2Client } from "google-auth-library"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
-import { User } from "@/lib/db/entities"
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -36,18 +35,21 @@ export async function GET(req: NextRequest) {
     }
 
     const ds = await getDataSource()
-    const userRepo = ds.getRepository(User)
-    
-    let user = await userRepo.findOne({ where: { email: userInfo.email } })
-    if (!user) {
-      // Create new user if not exists
-      user = userRepo.create({
-        name: userInfo.name || userInfo.email.split("@")[0],
-        email: userInfo.email,
-        region: "不明", // Default
-      })
-      await userRepo.save(user)
+    const userEmail = userInfo.email
+    const userName = userInfo.name || userEmail.split("@")[0]
+
+    let userRows = await ds.query(
+      `SELECT user_id, name, email FROM "user" WHERE email = $1 LIMIT 1`,
+      [userEmail]
+    )
+    if (!userRows || userRows.length === 0) {
+      userRows = await ds.query(
+        `INSERT INTO "user" (name, email, region) VALUES ($1, $2, $3)
+         RETURNING user_id, name, email`,
+        [userName, userEmail, "不明"]
+      )
     }
+    const user = userRows[0]
 
     const payload = {
       id: user.user_id,
