@@ -11,6 +11,7 @@ export function verifyAuth(req: NextRequest) {
       const decoded = jwt.verify(token, JWT_SECRET)
       return decoded
     } catch (err) {
+      console.error("JWT verification failed (Authorization Header):", err)
       return null
     }
   }
@@ -20,8 +21,10 @@ export function verifyAuth(req: NextRequest) {
       const decoded = jwt.verify(cookieToken, JWT_SECRET)
       return decoded
     } catch (err) {
+      console.error("JWT verification failed (Cookie):", err)
       return null
     }
   }
+  console.warn("No auth token found in Header or Cookie")
   return null
 }
