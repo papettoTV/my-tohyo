@@ -10,6 +10,7 @@ const client = new OAuth2Client(
 )
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
+console.log("google callback - JWT_SECRET is default:", JWT_SECRET === "default_secret")
 
 export async function GET(req: NextRequest) {
   try {

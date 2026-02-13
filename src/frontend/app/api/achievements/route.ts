@@ -4,7 +4,7 @@ import { verifyAuth } from "@/lib/auth"
 
 export async function POST(req: NextRequest) {
   try {
-    const user = verifyAuth(req)
+    const user = await verifyAuth(req)
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }

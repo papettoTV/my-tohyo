@@ -5,6 +5,7 @@ import { getDataSource } from "@/lib/db/data-source"
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
 
 export async function GET(req: NextRequest) {
+  console.log("ALLOW_TEST_AUTH env:", process.env.ALLOW_TEST_AUTH)
   if (process.env.ALLOW_TEST_AUTH !== "true") {
     return NextResponse.json({ message: "Test auth is not allowed" }, { status: 403 })
   }

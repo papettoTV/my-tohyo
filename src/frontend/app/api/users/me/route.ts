@@ -4,7 +4,7 @@ import { verifyAuth } from "@/lib/auth"
 
 export async function GET(req: NextRequest) {
   try {
-    const tokenUser = verifyAuth(req) as any
+    const tokenUser = await verifyAuth(req) as any
     const email = tokenUser?.email
     if (!email) {
       return NextResponse.json({ message: "Email not found in token" }, { status: 400 })

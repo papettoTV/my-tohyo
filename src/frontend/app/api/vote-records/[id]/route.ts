@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const user = verifyAuth(req)
+    const user = await verifyAuth(req)
     const userId = extractUserId(user)
     if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
 
@@ -99,7 +99,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const user = verifyAuth(req)
+    const user = await verifyAuth(req)
     const userId = extractUserId(user)
     if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
 

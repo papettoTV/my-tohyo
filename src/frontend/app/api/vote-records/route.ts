@@ -11,7 +11,7 @@ function extractUserId(user: any): number | null {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = verifyAuth(req)
+    const user = await verifyAuth(req)
     const userId = extractUserId(user)
     if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = verifyAuth(req)
+    const user = await verifyAuth(req)
     const userId = extractUserId(user)
     console.log("POST /api/vote-records - userId:", userId)
     if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
