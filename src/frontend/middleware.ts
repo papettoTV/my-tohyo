@@ -2,6 +2,11 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(req: NextRequest) {
+  // Always allow API routes to pass through (auth is handled in the routes)
+  if (req.nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.next()
+  }
+
   // Check token cookie for protected paths
   const token = req.cookies.get("token")?.value
   if (!token) {

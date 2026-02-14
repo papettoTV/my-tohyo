@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       name: "token",
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Always true for https (Vercel)
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
