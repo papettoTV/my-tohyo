@@ -62,19 +62,28 @@ export async function GET(req: NextRequest) {
 
     // Set httpOnly cookie and redirect to target page
     const redirectUrl = new URL(state, req.url)
-    const res = NextResponse.redirect(redirectUrl)
-    console.log("Setting token cookie in google-callback. Token length:", token.length)
-    res.cookies.set({
-      name: "token",
-      value: token,
+    const cookieStore = await cookies()
+    console.log("Setting token cookie in google-callback via cookies() API. Token length:", token.length)
+    
+    // Main auth cookie
+    cookieStore.set("my_tohyo_auth", token, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
-    console.log("Cookie 'token' set in response object (google):", !!res.cookies.get("token"))
-    return res
+
+    // Non-httpOnly debug cookie
+    cookieStore.set("my_tohyo_debug", "active-google", {
+      httpOnly: false,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+
+    return NextResponse.redirect(redirectUrl)
   } catch (error) {
     console.error("Google callback failed:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })

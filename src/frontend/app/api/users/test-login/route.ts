@@ -41,19 +41,28 @@ export async function GET(req: NextRequest) {
     const returnTo = searchParams.get("returnTo") || "/mypage"
 
     const redirectUrl = new URL(returnTo, req.url)
-    const res = NextResponse.redirect(redirectUrl)
-    console.log("Setting token cookie in test-login. Token length:", token.length)
-    res.cookies.set({
-      name: "token",
-      value: token,
+    const cookieStore = await cookies()
+    console.log("Setting token cookie in test-login via cookies() API. Token length:", token.length)
+    
+    // Main auth cookie
+    cookieStore.set("my_tohyo_auth", token, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
-    console.log("Cookie 'token' set in response object:", !!res.cookies.get("token"))
-    return res
+
+    // Non-httpOnly debug cookie (visible in document.cookie)
+    cookieStore.set("my_tohyo_debug", "active", {
+      httpOnly: false,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+
+    return NextResponse.redirect(redirectUrl)
   } catch (error) {
     console.error("Test login failed:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })

@@ -8,7 +8,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Check token cookie for protected paths
-  const token = req.cookies.get("token")?.value
+  const token = req.cookies.get("my_tohyo_auth")?.value || req.cookies.get("token")?.value
   if (!token) {
     const loginUrl = new URL("/login", req.url)
     const returnTo = req.nextUrl.pathname + (req.nextUrl.search || "")

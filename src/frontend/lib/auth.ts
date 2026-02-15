@@ -25,11 +25,21 @@ export async function verifyAuth(req?: NextRequest) {
   }
 
   // Try Cookies
-  let cookieToken = req?.cookies.get("token")?.value
+  let cookieToken = req?.cookies.get("my_tohyo_auth")?.value
   if (!cookieToken) {
     try {
-      cookieToken = (await cookies()).get("token")?.value
+      cookieToken = (await cookies()).get("my_tohyo_auth")?.value
     } catch (e) {}
+  }
+
+  // Backup: Check old 'token' name just in case transition is slow
+  if (!cookieToken) {
+    cookieToken = req?.cookies.get("token")?.value
+    if (!cookieToken) {
+      try {
+        cookieToken = (await cookies()).get("token")?.value
+      } catch (e) {}
+    }
   }
 
   if (cookieToken) {
