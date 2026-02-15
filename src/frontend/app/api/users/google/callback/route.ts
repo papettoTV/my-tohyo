@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { OAuth2Client } from "google-auth-library"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
+import { cookies } from "next/headers"
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,

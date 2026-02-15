@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 import { getDataSource } from "@/lib/db/data-source"
+import { cookies } from "next/headers"
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
 
