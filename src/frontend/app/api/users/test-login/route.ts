@@ -42,15 +42,17 @@ export async function GET(req: NextRequest) {
 
     const redirectUrl = new URL(returnTo, req.url)
     const res = NextResponse.redirect(redirectUrl)
+    console.log("Setting token cookie in test-login. Token length:", token.length)
     res.cookies.set({
       name: "token",
       value: token,
       httpOnly: true,
-      secure: true, // Always true for https (Vercel)
+      secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
+    console.log("Cookie 'token' set in response object:", !!res.cookies.get("token"))
     return res
   } catch (error) {
     console.error("Test login failed:", error)

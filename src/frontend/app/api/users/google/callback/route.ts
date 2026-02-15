@@ -63,15 +63,17 @@ export async function GET(req: NextRequest) {
     // Set httpOnly cookie and redirect to target page
     const redirectUrl = new URL(state, req.url)
     const res = NextResponse.redirect(redirectUrl)
+    console.log("Setting token cookie in google-callback. Token length:", token.length)
     res.cookies.set({
       name: "token",
       value: token,
       httpOnly: true,
-      secure: true, // Always true for https (Vercel)
+      secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
+    console.log("Cookie 'token' set in response object (google):", !!res.cookies.get("token"))
     return res
   } catch (error) {
     console.error("Google callback failed:", error)
