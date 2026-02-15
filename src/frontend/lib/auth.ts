@@ -19,7 +19,7 @@ export async function verifyAuth(req?: NextRequest) {
       const decoded = jwt.verify(token, JWT_SECRET)
       return decoded
     } catch (err) {
-      console.warn("JWT verification failed (Authorization Header), falling back to cookies:", err.message)
+      console.warn("JWT verification failed (Authorization Header), falling back to cookies:", (err as any).message)
     }
   }
 
