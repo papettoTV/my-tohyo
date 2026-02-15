@@ -43,20 +43,8 @@ export async function GET(req: NextRequest) {
 
     const redirectUrl = new URL(returnTo, req.url)
     const cookieStore = await cookies()
-    console.log("Setting token cookie in test-login via cookies() API. Token length:", token.length)
-    
-    // Main auth cookie
     cookieStore.set("my_tohyo_auth", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    })
-
-    // Non-httpOnly debug cookie (visible in document.cookie)
-    cookieStore.set("my_tohyo_debug", "active", {
-      httpOnly: false,
       secure: true,
       sameSite: "lax",
       path: "/",

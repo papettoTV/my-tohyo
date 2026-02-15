@@ -11,7 +11,6 @@ const client = new OAuth2Client(
 )
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret"
-console.log("google callback - JWT_SECRET is default:", JWT_SECRET === "default_secret")
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,20 +63,10 @@ export async function GET(req: NextRequest) {
     // Set httpOnly cookie and redirect to target page
     const redirectUrl = new URL(state, req.url)
     const cookieStore = await cookies()
-    console.log("Setting token cookie in google-callback via cookies() API. Token length:", token.length)
     
     // Main auth cookie
     cookieStore.set("my_tohyo_auth", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    })
-
-    // Non-httpOnly debug cookie
-    cookieStore.set("my_tohyo_debug", "active-google", {
-      httpOnly: false,
       secure: true,
       sameSite: "lax",
       path: "/",

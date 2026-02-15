@@ -51,24 +51,5 @@ export async function verifyAuth(req?: NextRequest) {
     }
   }
 
-  // Debugging: What cookies ARE present?
-  let cookieNames: string[] = []
-  let allHeaders: Record<string, string> = {}
-  
-  if (req) {
-    allHeaders = Object.fromEntries(req.headers.entries())
-    cookieNames = req.cookies.getAll().map(c => c.name)
-  } else {
-    try {
-      const h = await headers()
-      allHeaders = Object.fromEntries(h.entries())
-      cookieNames = (await cookies()).getAll().map(c => c.name)
-    } catch (e) {}
-  }
-  
-  console.warn("No auth token found.")
-  console.warn("Cookies reaching server:", cookieNames)
-  console.warn("All Headers:", JSON.stringify(allHeaders))
-  
   return null
 }
