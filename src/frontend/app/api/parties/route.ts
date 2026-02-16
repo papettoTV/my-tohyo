@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { getDataSource } from "@/lib/db/data-source"
-import { Party } from "@/lib/db/entities"
 
 export async function GET() {
   try {
     const ds = await getDataSource()
-    const partyRepo = ds.getRepository(Party)
-    const parties = await partyRepo.find({ order: { party_id: "ASC" } })
+    const parties = await ds.query(
+      `SELECT party_id, name FROM party ORDER BY party_id ASC`
+    )
     return NextResponse.json(parties)
   } catch (error) {
     console.error("Failed to fetch parties:", error)
