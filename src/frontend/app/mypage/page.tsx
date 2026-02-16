@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { History, LogOut, Plus, Calendar, Vote, Building } from "lucide-react"
+import { History, LogOut, Plus, Calendar, Vote, Building, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
@@ -50,11 +50,13 @@ export default function MyPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [voteRecords, setVoteRecords] = useState<VoteRecord[]>([])
   const [loadingVotes, setLoadingVotes] = useState(true)
+  const [loadingUser, setLoadingUser] = useState(true)
 
   useEffect(() => {
     let mounted = true
 
     async function loadUser() {
+      setLoadingUser(true)
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, {
           cache: "no-store",
@@ -67,6 +69,8 @@ export default function MyPage() {
         setUserId(typeof user?.user_id === "number" ? user.user_id : null)
       } catch {
         // 失敗時はデフォルトのまま表示
+      } finally {
+        if (mounted) setLoadingUser(false)
       }
     }
 
@@ -123,6 +127,17 @@ export default function MyPage() {
   const voteCount = filteredRecords.length
 
   const avatarText = userName ? userName.slice(0, 2) : "？"
+
+  if (loadingUser || loadingVotes) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+          <p className="text-gray-500 font-medium">読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
