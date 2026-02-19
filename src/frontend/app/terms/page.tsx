@@ -105,11 +105,8 @@ export default function TermsPage() {
                 </div>
               </ScrollArea>
 
-              <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                <Link href="/login" className="flex-1">
-                  <Button className="w-full">同意してログイン</Button>
-                </Link>
-                <Link href="/" className="flex-1">
+              <div className="flex justify-center mt-6">
+                <Link href="/" className="w-full sm:w-auto sm:min-w-[200px]">
                   <Button variant="outline" className="w-full bg-transparent">
                     ホームに戻る
                   </Button>
