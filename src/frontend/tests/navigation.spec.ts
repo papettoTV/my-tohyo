@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test("利用規約ページに遷移できること", async ({ page }) => {
   await page.goto("/")
 
-  // 利用規約ボタンをクリック
+  // フッターの利用規約リンクをクリック
   await page.getByRole("link", { name: "利用規約" }).click()
 
   // URLが変更されたことを確認
@@ -15,13 +15,11 @@ test("利用規約ページに遷移できること", async ({ page }) => {
   ).toBeVisible()
 })
 
-test("マイページ（ログイン前）に遷移しようとするとログイン画面にリダイレクトされること", async ({
+test("マイページ（ログイン前）にアクセスしようとするとログイン画面にリダイレクトされること", async ({
   page,
 }) => {
-  await page.goto("/")
-
-  // マイページボタンをクリック
-  await page.getByRole("link", { name: "マイページ" }).click()
+  // 直接マイページにアクセス
+  await page.goto("/mypage")
 
   // ログイン画面にリダイレクトされることを確認
   await expect(page).toHaveURL(/\/login/)
