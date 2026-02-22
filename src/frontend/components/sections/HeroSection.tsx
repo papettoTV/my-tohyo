@@ -15,7 +15,7 @@ export function HeroSection({ className }: { className?: string }) {
         <p className="text-xl md:text-2xl text-white/95 mb-10 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] max-w-2xl mx-auto">
           あなたが投票した政党や候補者を記録しておくと、
           <br />
-          後でその人たちがどんな活動をしていたか分かります。
+          後でその人たちがどんな活動をしていたかが分かります
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
