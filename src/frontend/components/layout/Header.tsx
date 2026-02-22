@@ -1,12 +1,25 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/users/me");
+        setIsLoggedIn(res.ok);
+      } catch {
+        setIsLoggedIn(false);
+      }
+    }
+    checkAuth();
+  }, []);
 
   const navLinks = [
     { label: "MyTohyoとは", href: "/#about" },
@@ -38,13 +51,22 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Desktop Login Button */}
+          {/* Desktop Auth Button */}
           <div className="hidden md:block">
-            <Link href="/api/users/google?returnTo=/mypage">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                ログイン
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/logout">
+                <Button variant="outline" className="border-blue-200 text-slate-600 hover:text-blue-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  ログアウト
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/api/users/google?returnTo=/mypage">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  ログイン
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -74,11 +96,20 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            <Link href="/api/users/google?returnTo=/mypage">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                ログイン
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/logout">
+                <Button variant="outline" className="w-full border-blue-200 text-slate-600 hover:text-blue-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  ログアウト
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/api/users/google?returnTo=/mypage">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  ログイン
+                </Button>
+              </Link>
+            )}
           </nav>
         )}
       </div>

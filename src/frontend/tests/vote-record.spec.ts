@@ -12,7 +12,7 @@ test.describe("投票記録のライフサイクル", () => {
 
     // 1. 登録ページへ遷移
     const registerLink = page.getByRole("link", { name: "投票記録登録" })
-    registerLink.click()
+    await registerLink.click()
     await expect(page).toHaveURL(/\/register/)
 
     // 2. フォームの入力
