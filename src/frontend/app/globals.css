@@ -14,7 +14,7 @@ body {
 
 @layer base {
   :root {
-    --background: #ffffff;
+    --background: 0 0% 100%;
     --foreground: 0 0% 14.5%; /* oklch(0.145 0 0) -> hsl(0, 0%, 14.5%) */
     --card: #ffffff;
     --card-foreground: 0 0% 14.5%;
