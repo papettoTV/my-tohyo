@@ -9,8 +9,8 @@ export async function loginAndNavigateToMyPage(page: Page) {
 
   // 2. ログイン画面へ遷移せずに直接テストログイン
   // 注意: NEXT_PUBLIC_ALLOW_TEST_AUTH=true が設定されている必要があります
-  const testLoginButton = page.getByRole("button", {
-    name: "テストログイン (認証バイパス)",
+  const testLoginButton = page.getByRole("link", {
+    name: "テストログイン",
   })
   
   // 3. ログイン実行とmypageへの遷移待機

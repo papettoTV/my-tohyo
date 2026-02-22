@@ -45,6 +45,8 @@ const config: Config = {
   			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
+  			'input-background': 'hsl(var(--input-background))',
+  			'switch-background': 'hsl(var(--switch-background))',
   			ring: 'hsl(var(--ring))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',

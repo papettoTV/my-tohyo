@@ -7,14 +7,23 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
 }
 
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="ja">
+      <body className="antialiased min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow pt-16 flex flex-col">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   )
 }
