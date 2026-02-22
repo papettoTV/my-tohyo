@@ -30,9 +30,7 @@ export function Header() {
   }, []);
 
   const navLinks = [
-    { label: "MyTohyoとは", id: "about" },
-    { label: "使い方", href: "/#how-to-use" },
-    { label: "よくある質問", href: "/#faq" },
+    { label: "MyTohyoとは", id: "about", href: "#" },
   ];
 
   const AboutModalContent = () => (
