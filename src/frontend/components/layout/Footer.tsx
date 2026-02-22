@@ -15,7 +15,7 @@ export function Footer() {
           <div className="text-center md:text-left">
             <div className="text-2xl font-bold text-blue-600 mb-2">MyTohyo</div>
             <p className="text-sm text-slate-500">
-              投票の記録を、かんたんに
+              投票先を記録して、振り返ろう
             </p>
           </div>
 
