@@ -12,7 +12,7 @@ export function Header() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("/api/users/me");
+        const res = await fetch("/api/users/me", { cache: "no-store" });
         setIsLoggedIn(res.ok);
       } catch {
         setIsLoggedIn(false);

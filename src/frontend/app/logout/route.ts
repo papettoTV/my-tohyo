@@ -46,6 +46,14 @@ export async function GET(req: NextRequest) {
     sameSite: "lax",
   })
 
+  res.cookies.set({
+    name: "my_tohyo_auth",
+    value: "",
+    path: "/",
+    maxAge: 0,
+    sameSite: "lax",
+  })
+
   return res
 }
 

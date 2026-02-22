@@ -8,14 +8,14 @@ export function HeroSection({ className }: { className?: string }) {
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-24 text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
-          投票の記録を、
+          投票先を記録して
           <br />
-          かんたんに残そう
+          振り返ろう
         </h1>
         <p className="text-xl md:text-2xl text-white/95 mb-10 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] max-w-2xl mx-auto">
           あなたが投票した政党や候補者を記録しておくと、
           <br />
-          後でその人たちがどんな活動をしているか分かります。
+          後でその人たちがどんな活動をしていたか分かります。
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
