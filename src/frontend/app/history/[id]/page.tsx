@@ -527,7 +527,7 @@ export default function HistoryDetailPage() {
                 ) : achievementHtml ? (
                   <>
                     <div
-                      className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                      className="space-y-2 text-sm leading-snug text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words [&_p]:mb-1 last:[&_p]:mb-0"
                       dangerouslySetInnerHTML={{ __html: achievementHtml }}
                     />
                     {achievementUpdatedAt && (
@@ -571,7 +571,7 @@ export default function HistoryDetailPage() {
               <CardContent className="space-y-4">
                 {manifestoHtml ? (
                   <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                    className="space-y-2 text-sm leading-snug text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words [&_p]:mb-1 last:[&_p]:mb-0"
                     dangerouslySetInnerHTML={{ __html: manifestoHtml }}
                   />
                 ) : (
