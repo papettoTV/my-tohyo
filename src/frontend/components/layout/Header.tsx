@@ -41,6 +41,9 @@ export function Header() {
             <Info className="w-6 h-6" />
             MyTohyoとは
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            MyTohyoのサービスコンセプトと目的について
+          </DialogDescription>
         </DialogHeader>
       </div>
       <div className="p-6 space-y-6">
@@ -139,9 +142,7 @@ export function Header() {
                   <DialogTrigger asChild>
                     <button 
                       className="text-slate-600 hover:text-blue-600 transition-colors py-2 text-left"
-                      onClick={(e) => {
-                        // Keep menu open if needed, but Dialog usually handles its own overlay
-                      }}
+                      onClick={() => {}}
                     >
                       {link.label}
                     </button>

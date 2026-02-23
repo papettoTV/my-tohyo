@@ -3,7 +3,11 @@ import Link from "next/link";
 export function Footer() {
   const footerLinks = [
     { label: "利用規約", href: "/terms" },
+<<<<<<< HEAD
     { label: "お問い合わせ", href: "/#contact" },
+=======
+    { label: "お問い合わせ", href: "https://x.com/papettoTV" },
+>>>>>>> feature/newdesign
   ];
 
   return (
@@ -21,13 +25,25 @@ export function Footer() {
           {/* Footer Links */}
           <nav className="flex flex-wrap justify-center gap-6">
             {footerLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-sm hover:text-blue-600 transition-colors"
-              >
-                {link.label}
-              </Link>
+              link.href.startsWith("http") ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm hover:text-blue-600 transition-colors"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm hover:text-blue-600 transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
           </nav>
         </div>
