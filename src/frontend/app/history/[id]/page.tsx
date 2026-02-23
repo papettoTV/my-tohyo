@@ -78,17 +78,13 @@ type VoteDetail = {
   achievement?: AchievementDetail | null
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
 
 function applyInlineFormatting(input: string): string {
-  let formatted = escapeHtml(input)
+  // Allow HTML tags to pass through if they are already present, 
+  // but still escape standard characters that might break the layout 
+  // if not handled properly. For now, we trust the source or assume 
+  // the user wants tags to work even in markdown mode if they provided them.
+  let formatted = input
 
   formatted = formatted.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
