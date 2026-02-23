@@ -3,11 +3,7 @@ import Link from "next/link";
 export function Footer() {
   const footerLinks = [
     { label: "利用規約", href: "/terms" },
-<<<<<<< HEAD
-    { label: "お問い合わせ", href: "/#contact" },
-=======
     { label: "お問い合わせ", href: "https://x.com/papettoTV" },
->>>>>>> feature/newdesign
   ];
 
   return (
