@@ -68,11 +68,10 @@ ${isCandidateMissing ? `   - 「${party} 実績」「${party} 活動報告」「
 
 # 出力制約（非常に重要）
 - HTMLタグ（<h3>, <p>, <ul>, <ol>, <li>, <strong>, <a>, <time>, <q>, <div>, <section>）を使用。
-- Tailwind CSSクラスで見た目を整えること（例: text-lg, font-bold, mb-2, list-disc, pl-5, space-y-2など）。
+- CSSクラスやstyle属性は一切使用せず、シンプルなDOM構造にすること。
 - <h1>, <h2> は使用しない。
 - 事実情報に無い記述は禁止。不足は「情報未提供」と明記。
 - 数値・固有名詞は出典と一致する場合のみ。
-- 各セクション間は十分な余白（mb-6など）を取る。
 - 各実績には可能な限り<time datetime="YYYY-MM-DD">と<a>出典を付す。
 
 # 出力構成（以下のセクション構成を厳守）

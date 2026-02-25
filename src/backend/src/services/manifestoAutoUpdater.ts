@@ -81,7 +81,7 @@ async function autoUpdateManifesto(payload: AutoUpdatePayload) {
     console.log(`${LOG_PREFIX} CALL_PROMPT_FLG is not true. Using dummy data.`);
     content = `
 <section>
-  <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
+  <h3>マニフェスト (ダミー)</h3>
   <p>これはダミーのマニフェストデータです。機能フラグが有効な場合にのみLLMによる生成が行われます。</p>
 </section>
 `.trim();

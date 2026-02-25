@@ -50,11 +50,10 @@ export const generateManifestoPrompt = ({
 ${isCandidateMissing ? "\n※候補者が特定されていないため、この選挙における政党公約（マニフェスト）を中心にまとめてください。\n" : ""}
 出力制約:
 - HTMLタグ（<h3>, <p>, <ul>, <ol>, <li>, <strong>, <a>, <time>, <q>, <div>, <section>）を使用。
-- Tailwind CSSクラスで見た目を整えること（例: text-lg, font-bold, mb-2, list-disc, pl-5, space-y-2など）。
+- CSSクラスやstyle属性は一切使用せず、シンプルなDOM構造にすること。
 - <h1>, <h2> は使用しない。
 - 事実情報に無い記述は禁止。不足は「情報未提供」と明記。
 - 数値・固有名詞は出典と一致する場合のみ。
-- 各セクション間は十分な余白（mb-6など）を取る。
 
 検証済み事実情報:
 - 選挙名: ${election}

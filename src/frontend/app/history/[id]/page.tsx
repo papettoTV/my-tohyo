@@ -527,7 +527,7 @@ export default function HistoryDetailPage() {
                 ) : achievementHtml ? (
                   <>
                     <div
-                      className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                      className="space-y-0 text-sm leading-none text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words [&_p]:mb-0 last:[&_p]:mb-0"
                       dangerouslySetInnerHTML={{ __html: achievementHtml }}
                     />
                     {achievementUpdatedAt && (
@@ -568,10 +568,10 @@ export default function HistoryDetailPage() {
                 </CardTitle>
                 <CardDescription>{vote.candidate_name ? "候補者の選挙時の公約・政策" : "所属政党の公約・政策"}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-0">
                 {manifestoHtml ? (
                   <div
-                    className="space-y-3 text-sm leading-relaxed text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words"
+                    className="space-y-0 text-sm leading-none text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-700 [&_a]:font-medium [&_a]:break-words [&_p]:mb-0 last:[&_p]:mb-0"
                     dangerouslySetInnerHTML={{ __html: manifestoHtml }}
                   />
                 ) : (

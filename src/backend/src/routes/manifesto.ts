@@ -100,7 +100,7 @@ router.post("/auto-generate", authenticateJWT, async (req, res) => {
       console.log("[manifestos/auto-generate] CALL_PROMPT_FLG is not true. Using dummy data.");
       content = `
         <section>
-          <h3 class="text-lg font-bold mb-2">マニフェスト (ダミー)</h3>
+          <h3>マニフェスト (ダミー)</h3>
           <p>これはダミーのマニフェストデータです。</p>
         </section>
       `;
