@@ -24,7 +24,7 @@ export function scheduleManifestoAutoUpdate(payload: AutoUpdatePayload) {
   }, 0)
 }
 
-async function autoUpdateManifesto(payload: AutoUpdatePayload) {
+export async function autoUpdateManifesto(payload: AutoUpdatePayload) {
   const { candidateId, candidateName, electionName } = payload
   const ds = await getDataSource()
   const partyId = await fetchCandidatePartyId(ds, candidateId)

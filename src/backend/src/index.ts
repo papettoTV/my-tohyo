@@ -26,6 +26,7 @@ import voteRecordRouter from "./routes/voteRecord"
 import socialImageRouter from "./routes/socialImage"
 import manifestoRouter from "./routes/manifesto"
 import achievementsRouter from "./routes/achievements"
+import cronRouter from "./routes/cron"
 
 import swaggerJSDoc from "swagger-jsdoc"
 import swaggerUi from "swagger-ui-express"
@@ -44,6 +45,7 @@ app.use("/api/candidates", candidateRouter)
 app.use("/api/vote-records", voteRecordRouter)
 app.use("/api/manifestos", manifestoRouter)
 app.use("/api/achievements", achievementsRouter)
+app.use("/api/cron", cronRouter)
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" })

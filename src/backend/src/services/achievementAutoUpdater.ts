@@ -23,7 +23,7 @@ export function scheduleAchievementAutoUpdate(payload: AutoUpdatePayload) {
   }, 0)
 }
 
-async function autoUpdateAchievement(payload: AutoUpdatePayload) {
+export async function autoUpdateAchievement(payload: AutoUpdatePayload) {
   const { candidateId, candidateName, electionName, voteDate, partyName, electionTypeName } = payload
   const ds = await getDataSource()
   const partyId = await fetchCandidatePartyId(ds, candidateId)
